@@ -1,0 +1,8 @@
+{
+  "overdue_days": 365,
+  "min_inspection_duration_minutes": 20,
+  "min_beneficiary_sample_size": 5,
+  "random_sample_pct": 10,
+  "max_inspections_per_day_per_inspector": 3,
+  "enabled": true
+}

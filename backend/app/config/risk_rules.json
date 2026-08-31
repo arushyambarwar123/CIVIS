@@ -1,0 +1,29 @@
+{
+  "weights": {
+    "duplicate_evidence": 20,
+    "beneficiary_location_conflict": 30,
+    "impossible_travel": 30,
+    "attendance_anomaly": 15,
+    "perfect_attendance_pattern": 10,
+    "identical_checkin_time": 8,
+    "trainer_conflict": 20,
+    "placement_anomaly": 12,
+    "placement_without_certification": 15,
+    "payment_anomaly": 15,
+    "inspection_overdue": 10,
+    "pending_corrective_action": 10,
+    "eligibility_mismatch": 18,
+    "duplicate_enrolment": 15,
+    "threshold_edge_pattern": 8
+  },
+  "aggregation": {
+    "centre_max_batch_weight": 0.6,
+    "centre_avg_batch_weight": 0.4
+  },
+  "thresholds": {
+    "low_max": 30,
+    "medium_max": 55,
+    "high_max": 75
+  },
+  "enabled": true
+}

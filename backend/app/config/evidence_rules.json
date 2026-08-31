@@ -1,0 +1,7 @@
+{
+  "duplicate_hash_similarity_threshold": 90,
+  "geo_radius_metres": 1000,
+  "max_upload_delay_hours": 72,
+  "min_evidence_count_per_batch": 3,
+  "enabled": true
+}

@@ -1,0 +1,9 @@
+{
+  "high_match_threshold": 85,
+  "possible_match_threshold": 60,
+  "name_similarity_weight": 0.4,
+  "mobile_token_weight": 0.3,
+  "bank_token_weight": 0.2,
+  "age_weight": 0.1,
+  "enabled": true
+}

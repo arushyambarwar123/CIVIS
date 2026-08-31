@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --navy: #1A2B4A;
+    --accent: #1D6FA4;
+  }
+  body {
+    background-color: #F8F9FA;
+    color: #1A2B4A;
+  }
+}
+
+/* Simple table styles */
+table { border-collapse: collapse; width: 100%; }
+th { background: #F1F3F5; font-weight: 600; text-align: left; }
+th, td { padding: 10px 14px; border: 1px solid #DEE2E6; font-size: 14px; }
+tr:hover td { background: #F8F9FA; }
+
+/* Utility */
+.text-navy { color: #1A2B4A; }
+.bg-navy { background-color: #1A2B4A; }
+.text-accent { color: #1D6FA4; }
+.bg-accent { background-color: #1D6FA4; }
+.border-accent { border-color: #1D6FA4; }

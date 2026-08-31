@@ -1,0 +1,11 @@
+{
+  "min_attendance_pct": 80,
+  "perfect_attendance_threshold_pct": 95,
+  "perfect_attendance_min_consecutive_days": 15,
+  "perfect_attendance_min_beneficiaries_pct": 80,
+  "identical_checkin_threshold_count": 10,
+  "geo_radius_metres": 500,
+  "impossible_travel_minutes": 60,
+  "attendance_spike_threshold_pct": 20,
+  "enabled": true
+}
