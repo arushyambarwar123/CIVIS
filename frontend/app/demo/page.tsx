@@ -1,24 +1,50 @@
 'use client';
-import { useEffect, useState } from 'react';
+
+import { useState } from 'react';
 import AppLayout from '@/components/layout/AppLayout';
 import { api } from '@/lib/api';
 
 const ENGINES = [
-  { key: 'attendance', label: 'Attendance Analysis', description: 'Detect perfect attendance, identical check-in times, geo mismatches, impossible travel, trainer conflicts', fn: () => api.runAttendanceAnalysis() },
-  { key: 'evidence', label: 'Evidence Verification', description: 'Find duplicate images via perceptual hash, detect geo-mismatched evidence uploads', fn: () => api.runEvidenceAnalysis() },
-  { key: 'placement', label: 'Placement Analysis', description: 'Detect placements before completion, without certification, employer concentration', fn: () => api.runPlacementAnalysis() },
-  { key: 'payment', label: 'Payment Analysis', description: 'Detect low-attendance stipends, payments to unenrolled beneficiaries, duplicate references', fn: () => api.runPaymentAnalysis() },
-  { key: 'matching', label: 'Beneficiary Matching', description: 'Cross-match beneficiary records by name similarity, mobile and bank account tokens', fn: () => api.runMatchingAnalysis() },
+  {
+    key: 'attendance',
+    label: 'Attendance Analysis Engine',
+    description: 'Detect perfect attendance, identical check-in times, GPS geo mismatches, impossible travel, and trainer schedule conflicts.',
+    fn: () => api.runAttendanceAnalysis(),
+  },
+  {
+    key: 'evidence',
+    label: 'Evidence Verification Engine',
+    description: 'Calculate perceptual image hashes, detect duplicate monitoring photos, and flag telemetry geo mismatches.',
+    fn: () => api.runEvidenceAnalysis(),
+  },
+  {
+    key: 'placement',
+    label: 'Placement Analysis Engine',
+    description: 'Verify placement dates against batch completion, check mandatory certifications, and spot employer concentration anomalies.',
+    fn: () => api.runPlacementAnalysis(),
+  },
+  {
+    key: 'payment',
+    label: 'Payment & Stipend Analysis',
+    description: 'Identify low-attendance stipend payouts, payments to unenrolled beneficiaries, and duplicate payment reference numbers.',
+    fn: () => api.runPaymentAnalysis(),
+  },
+  {
+    key: 'matching',
+    label: 'Beneficiary Identity Matching',
+    description: 'Execute fuzzy name similarity, mobile surrogate token matching, and bank account token collision detection.',
+    fn: () => api.runMatchingAnalysis(),
+  },
 ];
 
 const DEMO_INJECTIONS = [
-  { key: 'attendance-anomaly', label: 'Perfect Attendance', desc: 'Inject 100% attendance with identical 09:00 check-in for all beneficiaries in a batch' },
-  { key: 'duplicate-beneficiary', label: 'Duplicate Enrolment', desc: 'Add a beneficiary enrolled in two overlapping active batches simultaneously' },
-  { key: 'location-conflict', label: 'GPS Location Conflict', desc: 'Mark attendance 160km from the training centre' },
-  { key: 'duplicate-image', label: 'Duplicate Evidence Photos', desc: 'Upload 3 monitoring photos with identical perceptual hash' },
-  { key: 'placement-anomaly', label: 'Pre-completion Placement', desc: 'Inject placements dated before batch end date' },
-  { key: 'payment-anomaly', label: 'Low-Attendance Stipend', desc: 'Pay stipend to a beneficiary with <50% attendance' },
-  { key: 'high-risk-centre', label: 'Centre 07 Profile', desc: 'Re-inject the full Centre 07 critical risk profile (score 89/100)' },
+  { key: 'attendance-anomaly', label: 'Perfect Attendance Pattern', desc: 'Inject 100% attendance with identical 09:00 check-in for all beneficiaries in a batch.' },
+  { key: 'duplicate-beneficiary', label: 'Concurrent Enrolment', desc: 'Enroll an existing beneficiary in two overlapping active batches simultaneously.' },
+  { key: 'location-conflict', label: 'GPS Location Conflict', desc: 'Simulate mobile check-in 160km away from registered training centre coordinates.' },
+  { key: 'duplicate-image', label: 'Duplicate Evidence Photos', desc: 'Upload 3 monitoring photos with identical perceptual hashes across batches.' },
+  { key: 'placement-anomaly', label: 'Pre-completion Placement', desc: 'Inject employment placements dated prior to batch course completion date.' },
+  { key: 'payment-anomaly', label: 'Low-Attendance Stipend', desc: 'Process stipend payment to a beneficiary with under 50% course attendance.' },
+  { key: 'high-risk-centre', label: 'Centre 07 Risk Profile', desc: 'Re-inject the multi-factor critical risk anomaly signature for Training Centre 07.' },
 ];
 
 export default function DemoPage() {
@@ -40,98 +66,178 @@ export default function DemoPage() {
   }
 
   async function runAll() {
-    setRunningAll(true); setAllResult(null);
+    setRunningAll(true);
+    setAllResult(null);
     try {
       const r = await api.runAllChecks();
       setAllResult(r);
-    } catch { setAllResult({ error: 'Failed' }); }
-    finally { setRunningAll(false); }
+    } catch (e: any) {
+      setAllResult({ error: e?.message || 'Pipeline run failed' });
+    } finally {
+      setRunningAll(false);
+    }
   }
 
   async function injectAnomaly(key: string) {
     setInjectStatus(prev => ({ ...prev, [key]: 'running' }));
     try {
       const r = await api.injectAnomaly(key);
-      setInjectStatus(prev => ({ ...prev, [key]: r.message || 'Done' }));
+      setInjectStatus(prev => ({ ...prev, [key]: r.message || 'Anomaly injected successfully.' }));
     } catch (e: any) {
       setInjectStatus(prev => ({ ...prev, [key]: 'Error: ' + e.message }));
     }
   }
 
   async function resetDB() {
-    if (!confirm('This will delete all data and re-seed from scratch. Continue?')) return;
-    setResetting(true); setResetMsg('');
+    if (!confirm('This action will delete all transactional data and re-seed the system with baseline demonstration data. Continue?')) {
+      return;
+    }
+    setResetting(true);
+    setResetMsg('');
     try {
       await api.resetDatabase();
-      setResetMsg('Database reset and re-seeded successfully. Refresh the page to see new data.');
-    } catch { setResetMsg('Reset failed.'); }
-    finally { setResetting(false); }
+      setResetMsg('Database reset and baseline seeds reloaded successfully. Navigate to Dashboard or Centres to verify.');
+    } catch {
+      setResetMsg('Database reset failed.');
+    } finally {
+      setResetting(false);
+    }
   }
 
   return (
     <AppLayout>
-      <div className="flex items-center justify-between mb-5">
-        <div>
-          <h1 className="text-2xl font-bold text-navy">Demo Data Simulator</h1>
-          <p className="text-sm text-gray-500">Run analysis engines and inject test anomalies for live demonstration</p>
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+          <h1 className="page-title">Demo Simulator & Test Harness</h1>
+          <span className="demo-banner">SIMULATED ENVIRONMENT</span>
         </div>
+        <p className="page-subtitle">Trigger automated audit engines and inject synthetic fraud patterns for live demonstration</p>
       </div>
 
-      <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-6 text-xs text-amber-800">
-        <strong>Demo Mode Only.</strong> All data is synthetic. Use these controls to demonstrate CIVIS Lite capabilities.
+      {/* Warning Notice at Top */}
+      <div style={{
+        background: '#FDF3E3',
+        border: '1px solid #E8D5A3',
+        borderRadius: 4,
+        padding: '12px 16px',
+        fontSize: 13,
+        color: '#B77928',
+        marginBottom: 24,
+        lineHeight: '20px',
+      }}>
+        <strong>Demonstration Notice:</strong> All training centre entities, batch telemetry, and beneficiary identity data in this system are synthetic test vectors. The engines execute real heuristic rules and probabilistic algorithms against this simulated dataset.
       </div>
 
-      {/* Run All */}
-      <div className="bg-white border border-gray-200 rounded-lg p-5 mb-6">
-        <h2 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-3">Run All Analysis Engines</h2>
-        <div className="flex gap-3 items-center flex-wrap">
-          <button onClick={runAll} disabled={runningAll}
-            className="px-6 py-2.5 text-sm font-bold text-white rounded disabled:opacity-50"
-            style={{ backgroundColor: '#DC3545' }}>
-            {runningAll ? 'Running All Engines...' : 'RUN ALL CHECKS NOW'}
-          </button>
-          <span className="text-xs text-gray-400">Runs attendance, evidence, placement, payment, matching, and risk recalculation in sequence</span>
-        </div>
-        {allResult && (
-          <div className="mt-3 bg-gray-50 rounded p-3 text-xs">
-            <div className="font-semibold text-gray-600 mb-2">Results:</div>
-            {allResult.error ? <span className="text-red-600">{allResult.error}</span> : (
-              <div className="grid grid-cols-3 gap-2">
-                {Object.entries(allResult.results || {}).map(([k, v]) => (
-                  <div key={k} className="bg-white border border-gray-100 rounded p-2">
-                    <div className="font-medium text-gray-700 capitalize">{k}</div>
-                    <pre className="text-gray-500 text-xs mt-1 whitespace-pre-wrap">{JSON.stringify(v, null, 1)}</pre>
-                  </div>
-                ))}
-              </div>
-            )}
+      {/* Global Run All Pipeline */}
+      <div className="card" style={{ marginBottom: 24 }}>
+        <div className="card-header">
+          <div>
+            <span className="section-label">Master Pipeline</span>
+            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--c-navy)', marginTop: 2 }}>
+              Run Complete Audit & Risk Recalculation
+            </div>
           </div>
-        )}
+          <button
+            onClick={runAll}
+            disabled={runningAll}
+            className="btn btn-primary"
+          >
+            {runningAll ? 'Executing Full Pipeline...' : 'Run All Checks Now'}
+          </button>
+        </div>
+        <div className="card-body">
+          <p style={{ fontSize: 12, color: 'var(--c-text2)', margin: '0 0 12px' }}>
+            Sequentially executes attendance integrity checks, perceptual image comparison, placement timeline validation, stipend eligibility rules, cross-batch identity matching, and recalibrates all composite risk scores.
+          </p>
+
+          {allResult && (
+            <div>
+              <div className="label" style={{ marginBottom: 6 }}>Pipeline Execution Log:</div>
+              <pre style={{
+                background: '#EFF2F1',
+                border: '1px solid var(--c-border)',
+                borderRadius: 4,
+                padding: '12px 14px',
+                fontFamily: 'IBM Plex Mono, monospace',
+                fontSize: 12,
+                color: allResult.error ? '#B54747' : 'var(--c-text)',
+                overflowX: 'auto',
+                maxHeight: 280,
+                margin: 0,
+              }}>
+                {JSON.stringify(allResult, null, 2)}
+              </pre>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Individual engines */}
-      <div className="bg-white border border-gray-200 rounded-lg p-5 mb-6">
-        <h2 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-4">Individual Analysis Engines</h2>
-        <div className="space-y-3">
+      {/* Individual Analysis Engines */}
+      <div style={{ marginBottom: 24 }}>
+        <div className="section-label" style={{ marginBottom: 12 }}>Specialized Analysis Engines</div>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+          gap: 16,
+        }}>
           {ENGINES.map(engine => {
             const status = engineStatus[engine.key];
             return (
-              <div key={engine.key} className="flex items-start gap-4 p-3 bg-gray-50 rounded-lg border border-gray-100">
-                <button onClick={() => runEngine(engine.key, engine.fn)}
-                  disabled={status?.running}
-                  className="shrink-0 px-4 py-2 text-xs font-semibold text-white rounded disabled:opacity-50 whitespace-nowrap"
-                  style={{ backgroundColor: '#1D6FA4' }}>
-                  {status?.running ? 'Running...' : `RUN ${engine.label.toUpperCase()}`}
-                </button>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-navy">{engine.label}</div>
-                  <div className="text-xs text-gray-400 mt-0.5">{engine.description}</div>
+              <div key={engine.key} className="card">
+                <div className="card-body" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                  <div style={{ fontWeight: 600, color: 'var(--c-navy)', fontSize: 14, marginBottom: 4 }}>
+                    {engine.label}
+                  </div>
+                  <p style={{ fontSize: 12, color: 'var(--c-text2)', lineHeight: '18px', flex: 1, margin: '0 0 16px' }}>
+                    {engine.description}
+                  </p>
+
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+                    <button
+                      onClick={() => runEngine(engine.key, engine.fn)}
+                      disabled={status?.running}
+                      className="btn btn-primary btn-sm"
+                    >
+                      {status?.running ? 'Running...' : 'Execute Engine'}
+                    </button>
+                    {status?.result && (
+                      <span className="mono" style={{ fontSize: 11, color: '#31785B' }}>
+                        ✓ Complete
+                      </span>
+                    )}
+                  </div>
+
                   {status?.result && (
-                    <div className="mt-1 text-xs text-green-700">
-                      Done: {JSON.stringify(status.result.anomalies_detected || status.result)}
+                    <div style={{ marginTop: 12 }}>
+                      <pre style={{
+                        background: '#EFF2F1',
+                        border: '1px solid var(--c-border)',
+                        borderRadius: 4,
+                        padding: '8px 10px',
+                        fontFamily: 'IBM Plex Mono, monospace',
+                        fontSize: 11,
+                        color: 'var(--c-text)',
+                        margin: 0,
+                        overflowX: 'auto',
+                        maxHeight: 120,
+                      }}>
+                        {JSON.stringify(status.result.anomalies_detected || status.result, null, 2)}
+                      </pre>
                     </div>
                   )}
-                  {status?.error && <div className="mt-1 text-xs text-red-600">{status.error}</div>}
+
+                  {status?.error && (
+                    <div style={{
+                      marginTop: 10,
+                      padding: '6px 10px',
+                      borderRadius: 4,
+                      background: '#FDEAEA',
+                      color: '#B54747',
+                      fontSize: 11,
+                    }}>
+                      {status.error}
+                    </div>
+                  )}
                 </div>
               </div>
             );
@@ -139,41 +245,91 @@ export default function DemoPage() {
         </div>
       </div>
 
-      {/* Demo anomaly injections */}
-      <div className="bg-white border border-gray-200 rounded-lg p-5 mb-6">
-        <h2 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-4">Inject Demo Anomalies</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {DEMO_INJECTIONS.map(inj => (
-            <div key={inj.key} className="border border-gray-100 rounded-lg p-3 flex gap-3 items-start">
-              <button onClick={() => injectAnomaly(inj.key)}
-                disabled={injectStatus[inj.key] === 'running'}
-                className="shrink-0 px-3 py-1.5 text-xs font-semibold text-white rounded disabled:opacity-50"
-                style={{ backgroundColor: '#6C757D' }}>
-                INJECT
-              </button>
-              <div>
-                <div className="text-sm font-medium text-navy">{inj.label}</div>
-                <div className="text-xs text-gray-400 mt-0.5">{inj.desc}</div>
-                {injectStatus[inj.key] && injectStatus[inj.key] !== 'running' && (
-                  <div className={`mt-1 text-xs ${injectStatus[inj.key].startsWith('Error') ? 'text-red-600' : 'text-green-700'}`}>
-                    {injectStatus[inj.key]}
+      {/* Demo Anomaly Injections */}
+      <div style={{ marginBottom: 24 }}>
+        <div className="section-label" style={{ marginBottom: 12 }}>Synthetic Anomaly Injectors</div>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+          gap: 12,
+        }}>
+          {DEMO_INJECTIONS.map(inj => {
+            const status = injectStatus[inj.key];
+            const isError = status && status.startsWith('Error');
+            const isDone = status && !isError && status !== 'running';
+
+            return (
+              <div key={inj.key} className="card">
+                <div className="card-body">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, marginBottom: 6 }}>
+                    <div style={{ fontWeight: 600, color: 'var(--c-navy)', fontSize: 13 }}>
+                      {inj.label}
+                    </div>
+                    <button
+                      onClick={() => injectAnomaly(inj.key)}
+                      disabled={status === 'running'}
+                      className="btn btn-ghost btn-sm"
+                    >
+                      {status === 'running' ? 'Injecting...' : 'Inject'}
+                    </button>
                   </div>
-                )}
+                  <p style={{ fontSize: 12, color: 'var(--c-text2)', margin: '0 0 8px', lineHeight: '17px' }}>
+                    {inj.desc}
+                  </p>
+                  {isDone && (
+                    <div style={{ fontSize: 11, color: '#31785B', fontWeight: 500 }}>
+                      ✓ {status}
+                    </div>
+                  )}
+                  {isError && (
+                    <div style={{ fontSize: 11, color: '#B54747' }}>
+                      {status}
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
-      {/* Reset */}
-      <div className="bg-white border border-red-200 rounded-lg p-5">
-        <h2 className="text-sm font-semibold text-red-600 uppercase tracking-wide mb-3">Reset Database</h2>
-        <p className="text-sm text-gray-500 mb-3">Wipe all data and re-seed with the baseline dataset (20 centres, 400+ beneficiaries, Centre 07 anomaly profile).</p>
-        {resetMsg && <div className="text-xs text-green-700 bg-green-50 border border-green-100 rounded p-2 mb-3">{resetMsg}</div>}
-        <button onClick={resetDB} disabled={resetting}
-          className="px-4 py-2 text-sm font-semibold text-white bg-red-600 rounded hover:bg-red-700 disabled:opacity-50">
-          {resetting ? 'Resetting...' : 'RESET & RE-SEED DATABASE'}
-        </button>
+      {/* Reset Database Card */}
+      <div className="card">
+        <div className="card-header">
+          <div>
+            <span className="section-label" style={{ color: '#B54747' }}>Database Reset</span>
+            <div style={{ fontSize: 14, fontWeight: 600, color: '#B54747', marginTop: 2 }}>
+              Restore Clean Baseline Dataset
+            </div>
+          </div>
+        </div>
+        <div className="card-body">
+          <p style={{ fontSize: 12, color: 'var(--c-text2)', margin: '0 0 16px', lineHeight: '18px' }}>
+            Wipes all transactional state, generated inspections, and injected anomalies. Re-seeds the baseline 20 centres, batches, and the benchmark Training Centre 07 anomaly dataset.
+          </p>
+
+          {resetMsg && (
+            <div style={{
+              marginBottom: 16,
+              padding: '10px 14px',
+              borderRadius: 4,
+              backgroundColor: resetMsg.includes('failed') ? '#FDEAEA' : '#EAF4EF',
+              color: resetMsg.includes('failed') ? '#B54747' : '#31785B',
+              border: `1px solid ${resetMsg.includes('failed') ? '#DCE2E3' : '#B5DCC8'}`,
+              fontSize: 12,
+            }}>
+              {resetMsg}
+            </div>
+          )}
+
+          <button
+            onClick={resetDB}
+            disabled={resetting}
+            className="btn btn-danger"
+          >
+            {resetting ? 'Resetting Database...' : 'Reset & Re-Seed Database'}
+          </button>
+        </div>
       </div>
     </AppLayout>
   );

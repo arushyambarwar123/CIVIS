@@ -12,3 +12,6 @@ from app.models.inspection import Inspection
 from app.models.anomaly import Anomaly
 from app.models.risk import RiskScore
 from app.models.corrective_action import CorrectiveAction
+from app.models.user import User, InspectorProfile, MonitoringOfficerProfile
+from app.models.assignment_history import InspectionAssignmentHistory, AuditLog
+from app.models.notification import Notification

@@ -1,18 +1,42 @@
-interface MetricCardProps {
+interface Props {
   label: string;
   value: string | number;
   sub?: string;
-  color?: string;
-  bg?: string;
-  border?: string;
+  accent?: 'default' | 'warning' | 'critical' | 'positive';
 }
-export default function MetricCard({ label, value, sub, color, bg, border }: MetricCardProps) {
+
+const ACCENT_MAP = {
+  default:  { color: '#172B4D', bg: '#FFFFFF' },
+  warning:  { color: '#B77928', bg: '#FDF3E3' },
+  critical: { color: '#B54747', bg: '#FDEAEA' },
+  positive: { color: '#31785B', bg: '#EAF4EF' },
+};
+
+export default function MetricCard({ label, value, sub, accent = 'default' }: Props) {
+  const a = ACCENT_MAP[accent];
   return (
-    <div className="rounded-lg p-5"
-      style={{ backgroundColor: bg || 'white', border: `1px solid ${border || '#DEE2E6'}` }}>
-      <div className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">{label}</div>
-      <div className="text-3xl font-bold" style={{ color: color || '#1A2B4A' }}>{value}</div>
-      {sub && <div className="text-xs text-gray-400 mt-1">{sub}</div>}
+    <div style={{
+      background: a.bg,
+      border: '1px solid #DCE2E3',
+      borderRadius: 4,
+      padding: '14px 18px',
+    }}>
+      <div style={{
+        fontSize: 11, fontWeight: 500, textTransform: 'uppercase',
+        letterSpacing: '0.07em', color: '#64717D', marginBottom: 8,
+      }}>
+        {label}
+      </div>
+      <div style={{
+        fontSize: 28, fontWeight: 600, color: a.color,
+        fontVariantNumeric: 'tabular-nums', lineHeight: '1',
+        letterSpacing: '-0.02em',
+      }}>
+        {value}
+      </div>
+      {sub && (
+        <div style={{ fontSize: 12, color: '#A0AEB0', marginTop: 5 }}>{sub}</div>
+      )}
     </div>
   );
 }

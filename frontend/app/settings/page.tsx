@@ -1,35 +1,42 @@
 'use client';
+
 import { useEffect, useState } from 'react';
 import AppLayout from '@/components/layout/AppLayout';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { api } from '@/lib/api';
 
 const RULE_SETS = [
-  { key: 'risk_rules', label: 'Risk Scoring Rules', description: 'Anomaly weights and severity multipliers for risk score calculation' },
-  { key: 'attendance_rules', label: 'Attendance Rules', description: 'Thresholds for attendance anomaly detection' },
-  { key: 'evidence_rules', label: 'Evidence Rules', description: 'Hash similarity threshold and geo radius for evidence verification' },
-  { key: 'matching_rules', label: 'Matching Rules', description: 'Confidence thresholds for beneficiary matching' },
-  { key: 'inspection_rules', label: 'Inspection Rules', description: 'Scoring weights for inspection priority calculation' },
+  { key: 'risk_rules', label: 'Risk Scoring Rules', description: 'Anomaly weights and severity multipliers for composite risk score calculations' },
+  { key: 'attendance_rules', label: 'Attendance Rules', description: 'Thresholds and patterns for biometric and GPS attendance anomaly detection' },
+  { key: 'evidence_rules', label: 'Evidence Rules', description: 'Perceptual hash hamming distance threshold and geo radius validation for evidence media' },
+  { key: 'matching_rules', label: 'Matching Rules', description: 'Confidence scoring weights for demographic and financial surrogate token matching' },
+  { key: 'inspection_rules', label: 'Inspection Rules', description: 'Scoring formula weights for physical inspection priority queue generation' },
 ];
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('risk_rules');
   const [configs, setConfigs] = useState<Record<string, any>>({});
   const [editValues, setEditValues] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState('');
 
   useEffect(() => {
-    api.getAllConfigs().then(data => {
-      setConfigs(data);
-      // Initialize edit values with formatted JSON
-      const edits: Record<string, string> = {};
-      Object.entries(data).forEach(([k, v]) => { edits[k] = JSON.stringify(v, null, 2); });
-      setEditValues(edits);
-    });
+    api.getAllConfigs()
+      .then(data => {
+        setConfigs(data);
+        const edits: Record<string, string> = {};
+        Object.entries(data).forEach(([k, v]) => {
+          edits[k] = JSON.stringify(v, null, 2);
+        });
+        setEditValues(edits);
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   async function save(key: string) {
-    setSaving(true); setSaveMsg('');
+    setSaving(true);
+    setSaveMsg('');
     try {
       const parsed = JSON.parse(editValues[key]);
       await api.updateConfig(key, parsed);
@@ -37,7 +44,9 @@ export default function SettingsPage() {
       setSaveMsg(`${key} saved successfully.`);
     } catch (e: any) {
       setSaveMsg(`Error: ${e.message}`);
-    } finally { setSaving(false); }
+    } finally {
+      setSaving(false);
+    }
   }
 
   function reset(key: string) {
@@ -49,71 +58,128 @@ export default function SettingsPage() {
 
   return (
     <AppLayout>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-navy">Rules & Configuration</h1>
-        <p className="text-sm text-gray-500">Edit scoring weights, detection thresholds, and rule parameters</p>
+      <div style={{ marginBottom: 20 }}>
+        <h1 className="page-title">Rules & Engine Configuration</h1>
+        <p className="page-subtitle">Configure heuristic weights, detection parameters, and scoring formulas</p>
       </div>
 
-      <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-5 text-xs text-amber-800">
-        <strong>Note:</strong> Changes to rule weights affect all future analysis runs. Risk scores will need to be recalculated after changes.
+      {/* Advisory Banner */}
+      <div style={{
+        background: '#FDF3E3',
+        border: '1px solid #E8D5A3',
+        borderRadius: 4,
+        padding: '10px 14px',
+        fontSize: 12,
+        color: '#B77928',
+        marginBottom: 20,
+      }}>
+        <strong>Configuration Notice:</strong> Parameter changes directly govern automated detection algorithms. Existing risk scores will need to be recomputed from the Risk Analysis page following weight modifications.
       </div>
 
-      <div className="flex gap-5">
-        {/* Sidebar */}
-        <div className="w-56 shrink-0 space-y-1">
-          {RULE_SETS.map(rs => (
-            <button key={rs.key} onClick={() => { setActiveTab(rs.key); setSaveMsg(''); }}
-              className="w-full text-left px-4 py-3 rounded-lg text-sm transition-colors"
+      {/* Horizontal Tab Bar with border-bottom style */}
+      <div style={{
+        display: 'flex',
+        gap: 20,
+        borderBottom: '1px solid var(--c-border)',
+        marginBottom: 20,
+        overflowX: 'auto',
+      }}>
+        {RULE_SETS.map(rs => {
+          const active = activeTab === rs.key;
+          return (
+            <button
+              key={rs.key}
+              onClick={() => { setActiveTab(rs.key); setSaveMsg(''); }}
               style={{
-                backgroundColor: activeTab === rs.key ? '#EFF6FF' : 'white',
-                color: activeTab === rs.key ? '#1D6FA4' : '#374151',
-                border: `1px solid ${activeTab === rs.key ? '#BFDBFE' : '#E5E7EB'}`,
-                fontWeight: activeTab === rs.key ? 600 : 400,
-              }}>
+                background: 'none',
+                border: 'none',
+                borderBottom: active ? '2px solid var(--c-teal)' : '2px solid transparent',
+                color: active ? 'var(--c-teal)' : 'var(--c-text2)',
+                fontWeight: active ? 600 : 400,
+                fontSize: 13,
+                padding: '10px 6px',
+                cursor: 'pointer',
+                marginBottom: -1,
+                whiteSpace: 'nowrap',
+              }}
+            >
               {rs.label}
             </button>
-          ))}
-        </div>
+          );
+        })}
+      </div>
 
-        {/* Editor */}
-        <div className="flex-1 bg-white border border-gray-200 rounded-lg p-5">
+      {loading ? (
+        <LoadingSpinner rows={10} label="Loading rule configurations..." />
+      ) : (
+        <div className="card">
           {activeRuleSet && (
             <>
-              <div className="flex justify-between items-start mb-4">
+              <div className="card-header">
                 <div>
-                  <h2 className="font-semibold text-navy">{activeRuleSet.label}</h2>
-                  <p className="text-xs text-gray-400 mt-0.5">{activeRuleSet.description}</p>
+                  <h2 style={{ fontSize: 15, fontWeight: 600, color: 'var(--c-navy)', margin: 0 }}>
+                    {activeRuleSet.label}
+                  </h2>
+                  <p style={{ fontSize: 12, color: 'var(--c-text2)', margin: '4px 0 0' }}>
+                    {activeRuleSet.description}
+                  </p>
                 </div>
-                <div className="flex gap-2">
-                  <button onClick={() => reset(activeTab)}
-                    className="px-3 py-1.5 text-xs border border-gray-200 rounded text-gray-600 hover:bg-gray-50">
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <button
+                    onClick={() => reset(activeTab)}
+                    className="btn btn-ghost btn-sm"
+                  >
                     Reset
                   </button>
-                  <button onClick={() => save(activeTab)} disabled={saving}
-                    className="px-4 py-1.5 text-xs font-semibold text-white rounded disabled:opacity-50"
-                    style={{ backgroundColor: '#1D6FA4' }}>
+                  <button
+                    onClick={() => save(activeTab)}
+                    disabled={saving}
+                    className="btn btn-teal btn-sm"
+                  >
                     {saving ? 'Saving...' : 'Save Changes'}
                   </button>
                 </div>
               </div>
 
-              {saveMsg && (
-                <div className={`mb-3 p-2 rounded text-xs ${saveMsg.startsWith('Error') ? 'bg-red-50 text-red-700 border border-red-100' : 'bg-green-50 text-green-700 border border-green-100'}`}>
-                  {saveMsg}
-                </div>
-              )}
+              <div className="card-body">
+                {saveMsg && (
+                  <div style={{
+                    marginBottom: 16,
+                    padding: '8px 12px',
+                    borderRadius: 4,
+                    fontSize: 12,
+                    backgroundColor: saveMsg.startsWith('Error') ? '#FDEAEA' : '#EAF4EF',
+                    color: saveMsg.startsWith('Error') ? '#B54747' : '#31785B',
+                    border: `1px solid ${saveMsg.startsWith('Error') ? '#DCE2E3' : '#B5DCC8'}`,
+                  }}>
+                    {saveMsg}
+                  </div>
+                )}
 
-              <textarea
-                value={editValues[activeTab] || ''}
-                onChange={e => setEditValues(prev => ({ ...prev, [activeTab]: e.target.value }))}
-                rows={24}
-                className="w-full font-mono text-xs border border-gray-200 rounded px-3 py-3 bg-gray-50 focus:outline-none focus:border-blue-300"
-                spellCheck={false}
-              />
+                <div>
+                  <label className="label" style={{ marginBottom: 6 }}>
+                    Rule Definition JSON ({activeTab}.json)
+                  </label>
+                  <textarea
+                    value={editValues[activeTab] || ''}
+                    onChange={e => setEditValues(prev => ({ ...prev, [activeTab]: e.target.value }))}
+                    rows={22}
+                    className="input"
+                    style={{
+                      fontFamily: 'IBM Plex Mono, monospace',
+                      fontSize: 12,
+                      lineHeight: '20px',
+                      whiteSpace: 'pre',
+                      backgroundColor: 'var(--c-surface2)',
+                    }}
+                    spellCheck={false}
+                  />
+                </div>
+              </div>
             </>
           )}
         </div>
-      </div>
+      )}
     </AppLayout>
   );
 }

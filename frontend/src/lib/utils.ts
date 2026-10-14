@@ -25,17 +25,18 @@ export function formatDateTime(d: string | null | undefined): string {
 
 export function riskColor(level: string): string {
   const map: Record<string, string> = {
-    low: '#198754', medium: '#FFC107', high: '#FD7E14', critical: '#DC3545',
+    low: '#31785B', medium: '#B77928', high: '#C46A00', critical: '#B54747',
   };
-  return map[level?.toLowerCase()] ?? '#6C757D';
+  return map[level?.toLowerCase()] ?? '#64717D';
 }
 
 export function riskBg(level: string): string {
   const map: Record<string, string> = {
-    low: '#D1E7DD', medium: '#FFF3CD', high: '#FFE0C2', critical: '#F8D7DA',
+    low: '#EAF4EF', medium: '#FDF3E3', high: '#FDF0E3', critical: '#FDEAEA',
   };
-  return map[level?.toLowerCase()] ?? '#E9ECEF';
+  return map[level?.toLowerCase()] ?? '#EFF2F1';
 }
+
 
 export function statusBg(status: string): string {
   const map: Record<string, string> = {

@@ -12,7 +12,8 @@ from app.api import (
     dashboard, centres, batches, beneficiaries, trainers,
     attendance, evidence, assessments, placements, payments,
     inspections, anomalies, risk, matching,
-    corrective_actions, configuration, demo, priority, analyse
+    corrective_actions, configuration, demo, priority, analyse,
+    auth, users, notifications
 )
 
 Base.metadata.create_all(bind=engine)
@@ -25,7 +26,11 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "https://civis-lite.vercel.app",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -51,6 +56,9 @@ app.include_router(configuration.router,     prefix=PREFIX)
 app.include_router(demo.router,              prefix=PREFIX)
 app.include_router(priority.router,          prefix=PREFIX)
 app.include_router(analyse.router,           prefix=PREFIX)
+app.include_router(auth.router,              prefix=PREFIX)
+app.include_router(users.router,             prefix=PREFIX)
+app.include_router(notifications.router,     prefix=PREFIX)
 
 @app.get("/")
 def read_root():

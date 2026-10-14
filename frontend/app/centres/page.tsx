@@ -1,12 +1,14 @@
 'use client';
+
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import AppLayout from '@/components/layout/AppLayout';
 import RiskBadge from '@/components/ui/RiskBadge';
 import StatusBadge from '@/components/ui/StatusBadge';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { api } from '@/lib/api';
 import { TrainingCentre } from '@/types';
 import { formatDate } from '@/lib/utils';
-import Link from 'next/link';
 
 export default function CentresPage() {
   const [centres, setCentres] = useState<TrainingCentre[]>([]);
@@ -30,53 +32,114 @@ export default function CentresPage() {
 
   const states = Array.from(new Set(centres.map(c => c.state))).sort();
 
+  const counts = {
+    critical: centres.filter(c => c.risk_level === 'critical').length,
+    high: centres.filter(c => c.risk_level === 'high').length,
+    medium: centres.filter(c => c.risk_level === 'medium').length,
+    low: centres.filter(c => c.risk_level === 'low').length,
+  };
+
   return (
     <AppLayout>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-navy">Training Centres</h1>
-          <p className="text-sm text-gray-500">{filtered.length} of {centres.length} centres</p>
-        </div>
+      <div style={{ marginBottom: 20 }}>
+        <h1 className="page-title">Training Centres</h1>
+        <p className="page-subtitle">Showing {filtered.length} of {centres.length} centres</p>
       </div>
 
-      {/* Filters */}
-      <div className="bg-white border border-gray-200 rounded-lg p-4 mb-5 flex gap-3 flex-wrap items-end">
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">Search</label>
-          <input value={search} onChange={e => setSearch(e.target.value)}
+      {/* Filter Bar */}
+      <div className="filter-bar">
+        <div className="filter-group">
+          <label className="label">Search</label>
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
             placeholder="Name, code, district..."
-            className="border border-gray-200 rounded px-3 py-1.5 text-sm w-48" />
+            className="input"
+            style={{ width: 220 }}
+          />
         </div>
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">Risk Level</label>
-          <select value={filter.risk_level} onChange={e => setFilter(f => ({ ...f, risk_level: e.target.value }))}
-            className="border border-gray-200 rounded px-3 py-1.5 text-sm">
-            <option value="">All</option>
+        <div className="filter-group">
+          <label className="label">Risk Level</label>
+          <select
+            value={filter.risk_level}
+            onChange={e => setFilter(f => ({ ...f, risk_level: e.target.value }))}
+            className="input"
+          >
+            <option value="">All Risk Levels</option>
             <option value="critical">Critical</option>
             <option value="high">High</option>
             <option value="medium">Medium</option>
             <option value="low">Low</option>
           </select>
         </div>
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">State</label>
-          <select value={filter.state} onChange={e => setFilter(f => ({ ...f, state: e.target.value }))}
-            className="border border-gray-200 rounded px-3 py-1.5 text-sm">
+        <div className="filter-group">
+          <label className="label">State</label>
+          <select
+            value={filter.state}
+            onChange={e => setFilter(f => ({ ...f, state: e.target.value }))}
+            className="input"
+          >
             <option value="">All States</option>
             {states.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
-        <button onClick={() => { setFilter({ risk_level: '', state: '', status: '' }); setSearch(''); }}
-          className="px-3 py-1.5 text-sm border border-gray-200 rounded bg-gray-50 text-gray-600">
-          Clear
+        <div className="filter-group">
+          <label className="label">Status</label>
+          <select
+            value={filter.status}
+            onChange={e => setFilter(f => ({ ...f, status: e.target.value }))}
+            className="input"
+          >
+            <option value="">All Statuses</option>
+            <option value="active">Active</option>
+            <option value="pending">Pending</option>
+            <option value="suspended">Suspended</option>
+            <option value="closed">Closed</option>
+          </select>
+        </div>
+        <button
+          onClick={() => { setFilter({ risk_level: '', state: '', status: '' }); setSearch(''); }}
+          className="btn btn-ghost btn-sm"
+          style={{ height: 33 }}
+        >
+          Clear Filters
         </button>
       </div>
 
+      {/* Summary counts by risk level as small inline pills */}
+      <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 16, flexWrap: 'wrap' }}>
+        <span className="section-label" style={{ marginRight: 2 }}>Summary:</span>
+        {(['critical', 'high', 'medium', 'low'] as const).map(lvl => {
+          const isActive = filter.risk_level === lvl;
+          return (
+            <button
+              key={lvl}
+              onClick={() => setFilter(f => ({ ...f, risk_level: isActive ? '' : lvl }))}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '3px 8px',
+                borderRadius: 4,
+                background: isActive ? 'var(--c-surface2)' : 'var(--c-surface)',
+                border: `1px solid ${isActive ? 'var(--c-teal)' : 'var(--c-border)'}`,
+                cursor: 'pointer',
+              }}
+            >
+              <RiskBadge level={lvl} size="sm" />
+              <span className="mono" style={{ fontWeight: 600, color: 'var(--c-text)', fontSize: 12 }}>
+                {counts[lvl]}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
       {loading ? (
-        <div className="text-gray-400 text-sm p-6">Loading...</div>
+        <LoadingSpinner rows={8} label="Loading training centres..." />
       ) : (
-        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-          <table className="w-full">
+        <div className="card" style={{ overflow: 'hidden' }}>
+          <table>
             <thead>
               <tr>
                 <th>Centre Code</th>
@@ -86,33 +149,47 @@ export default function CentresPage() {
                 <th>Risk</th>
                 <th>Anomalies</th>
                 <th>Last Inspection</th>
-                <th></th>
+                <th style={{ textAlign: 'right' }}>Action</th>
               </tr>
             </thead>
             <tbody>
               {filtered.map(c => (
                 <tr key={c.id}>
-                  <td className="font-mono text-xs text-gray-600">{c.centre_code}</td>
+                  <td className="mono" style={{ color: 'var(--c-text2)' }}>{c.centre_code}</td>
                   <td>
-                    <Link href={`/centres/${c.id}`} className="font-medium text-blue-700 hover:underline">
+                    <Link
+                      href={`/centres/${c.id}`}
+                      style={{ color: '#287D79', fontWeight: 500, textDecoration: 'none' }}
+                    >
                       {c.centre_name}
                     </Link>
-                    <div className="text-xs text-gray-400">{c.organisation_name}</div>
+                    <div style={{ fontSize: 11, color: 'var(--c-text2)', marginTop: 2 }}>
+                      {c.organisation_name}
+                    </div>
                   </td>
-                  <td className="text-sm">{c.district}<div className="text-xs text-gray-400">{c.state}</div></td>
+                  <td>
+                    <div style={{ fontSize: 13, color: 'var(--c-text)' }}>{c.district}</div>
+                    <div style={{ fontSize: 11, color: 'var(--c-text2)' }}>{c.state}</div>
+                  </td>
                   <td><StatusBadge status={c.status} /></td>
                   <td><RiskBadge level={c.risk_level || 'low'} score={c.risk_score} /></td>
                   <td>
                     {(c.open_anomalies || 0) > 0 ? (
-                      <span className="text-red-600 font-semibold">{c.open_anomalies}</span>
+                      <span className="mono" style={{ color: '#B54747', fontWeight: 600 }}>
+                        {c.open_anomalies}
+                      </span>
                     ) : (
-                      <span className="text-gray-400">0</span>
+                      <span className="mono" style={{ color: 'var(--c-text2)' }}>0</span>
                     )}
                   </td>
-                  <td className="text-sm text-gray-600">{formatDate(c.last_inspection_date)}</td>
-                  <td>
-                    <Link href={`/centres/${c.id}`}
-                      className="text-xs text-blue-600 hover:underline px-2 py-1 border border-blue-100 rounded">
+                  <td style={{ fontSize: 12, color: 'var(--c-text2)' }}>
+                    {formatDate(c.last_inspection_date)}
+                  </td>
+                  <td style={{ textAlign: 'right' }}>
+                    <Link
+                      href={`/centres/${c.id}`}
+                      className="btn btn-ghost btn-sm"
+                    >
                       Profile
                     </Link>
                   </td>
@@ -121,7 +198,9 @@ export default function CentresPage() {
             </tbody>
           </table>
           {filtered.length === 0 && (
-            <div className="text-center py-8 text-gray-400 text-sm">No centres match the current filters.</div>
+            <div className="empty-state">
+              <p>No centres match the selected filters.</p>
+            </div>
           )}
         </div>
       )}

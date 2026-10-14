@@ -1,6 +1,11 @@
 'use client';
+
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import AppLayout from '@/components/layout/AppLayout';
+import StatusBadge from '@/components/ui/StatusBadge';
+import MetricCard from '@/components/ui/MetricCard';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { api } from '@/lib/api';
 import { Evidence } from '@/types';
 import { formatDateTime } from '@/lib/utils';
@@ -13,27 +18,37 @@ export default function EvidencePage() {
   const [filterFlagged, setFilterFlagged] = useState(false);
 
   async function load() {
-    const data = await api.getEvidence();
-    setEvidence(data);
-    setLoading(false);
+    setLoading(true);
+    try {
+      const data = await api.getEvidence();
+      setEvidence(data);
+    } finally {
+      setLoading(false);
+    }
   }
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
   async function runAnalysis() {
-    setRunning(true); setRunMsg('');
+    setRunning(true);
+    setRunMsg('');
     try {
       const r = await api.runEvidenceAnalysis();
-      setRunMsg(`Evidence analysis complete: ${r.anomalies_detected?.duplicate_images || 0} duplicates, ${r.anomalies_detected?.geo_mismatches || 0} geo mismatches.`);
+      setRunMsg(`Evidence analysis complete: ${r.anomalies_detected?.duplicate_images || 0} duplicates, ${r.anomalies_detected?.geo_mismatches || 0} geo mismatches detected.`);
       await load();
-    } catch { setRunMsg('Analysis failed.'); }
-    finally { setRunning(false); }
+    } catch {
+      setRunMsg('Evidence analysis run failed.');
+    } finally {
+      setRunning(false);
+    }
   }
 
   const displayed = filterFlagged ? evidence.filter(e => e.is_flagged) : evidence;
   const flaggedCount = evidence.filter(e => e.is_flagged).length;
 
-  // Group by hash to show duplicates
+  // Group by perceptual hash to find reused media
   const hashGroups: Record<string, Evidence[]> = {};
   evidence.forEach(e => {
     if (e.image_hash) {
@@ -45,101 +60,205 @@ export default function EvidencePage() {
 
   return (
     <AppLayout>
-      <div className="flex items-center justify-between mb-5">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h1 className="text-2xl font-bold text-navy">Evidence Verification</h1>
-          <p className="text-sm text-gray-500">Detect reused monitoring photos via perceptual hash comparison</p>
+          <h1 className="page-title">Evidence Media Verification</h1>
+          <p className="page-subtitle">Automated perceptual hash matching and telemetry validation across inspection photos</p>
         </div>
-        <div className="flex gap-3 items-center">
-          {runMsg && <span className="text-xs text-green-700 bg-green-50 border border-green-100 px-3 py-1.5 rounded">{runMsg}</span>}
-          <button onClick={runAnalysis} disabled={running}
-            className="px-4 py-2 text-sm font-semibold text-white rounded disabled:opacity-50"
-            style={{ backgroundColor: '#1D6FA4' }}>
-            {running ? 'Running...' : 'RUN EVIDENCE ANALYSIS'}
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          {runMsg && (
+            <span style={{
+              fontSize: 12,
+              padding: '4px 10px',
+              borderRadius: 4,
+              backgroundColor: runMsg.includes('failed') ? '#FDEAEA' : '#EAF4EF',
+              color: runMsg.includes('failed') ? '#B54747' : '#31785B',
+              border: `1px solid ${runMsg.includes('failed') ? '#DCE2E3' : '#B5DCC8'}`,
+            }}>
+              {runMsg}
+            </span>
+          )}
+          <button
+            onClick={runAnalysis}
+            disabled={running}
+            className="btn btn-primary btn-sm"
+          >
+            {running ? 'Running Analysis...' : 'Run Evidence Analysis'}
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-4 mb-5">
-        <div className="bg-white border border-gray-200 rounded-lg p-4">
-          <div className="text-2xl font-bold text-navy">{evidence.length}</div>
-          <div className="text-xs text-gray-500 mt-1">Total Evidence Records</div>
-        </div>
-        <div className="bg-white border border-red-200 rounded-lg p-4">
-          <div className="text-2xl font-bold text-red-600">{flaggedCount}</div>
-          <div className="text-xs text-gray-500 mt-1">Flagged (Duplicate Hash)</div>
-        </div>
-        <div className="bg-white border border-orange-200 rounded-lg p-4">
-          <div className="text-2xl font-bold text-orange-500">{duplicateHashes.length}</div>
-          <div className="text-xs text-gray-500 mt-1">Unique Duplicate Hash Groups</div>
-        </div>
+      {/* Metrics */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginBottom: 20 }}>
+        <MetricCard
+          label="Total Evidence Records"
+          value={evidence.length}
+          sub="Uploaded verification assets"
+          accent="default"
+        />
+        <MetricCard
+          label="Flagged Duplicates"
+          value={flaggedCount}
+          sub="Potential reused media"
+          accent="critical"
+        />
+        <MetricCard
+          label="Duplicate Hash Clusters"
+          value={duplicateHashes.length}
+          sub="Collision sets identified"
+          accent="warning"
+        />
       </div>
 
-      {/* Duplicate hash groups */}
+      {/* Duplicate Hash Clusters Section */}
       {duplicateHashes.length > 0 && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-5 mb-5">
-          <h2 className="text-sm font-semibold text-red-700 mb-3">Duplicate Image Hash Groups</h2>
-          {duplicateHashes.map(([hash, evs]) => (
-            <div key={hash} className="mb-3 bg-white border border-red-100 rounded p-3">
-              <div className="text-xs font-mono text-red-700 mb-2">Hash: {hash} ({evs.length} images)</div>
-              <div className="grid grid-cols-3 gap-2">
-                {evs.map(e => (
-                  <div key={e.id} className="bg-gray-50 rounded p-2 text-xs">
-                    <div className="text-gray-500">Evidence #{e.id}</div>
-                    <div className="text-gray-400">Batch #{e.batch_id}</div>
-                    <div className="text-gray-400">{formatDateTime(e.uploaded_at)}</div>
-                  </div>
-                ))}
+        <div className="card" style={{ marginBottom: 20 }}>
+          <div className="card-header">
+            <div>
+              <span className="section-label">Duplicate Hash Clusters</span>
+              <div style={{ fontSize: 13, color: 'var(--c-text2)', marginTop: 2 }}>
+                Cross-batch image reuse detected via identical perceptual image hashes
               </div>
             </div>
-          ))}
+            <span className="mono" style={{ fontSize: 12, color: '#B54747', fontWeight: 600 }}>
+              {duplicateHashes.length} Collision Sets
+            </span>
+          </div>
+          <div className="card-body">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {duplicateHashes.map(([hash, evs]) => (
+                <div
+                  key={hash}
+                  style={{
+                    padding: '12px 14px',
+                    borderRadius: 4,
+                    background: 'var(--c-surface2)',
+                    border: '1px solid var(--c-border)',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span className="label" style={{ margin: 0 }}>Perceptual Hash:</span>
+                      <span className="mono" style={{ fontSize: 12, fontWeight: 600, color: '#B54747' }}>
+                        {hash}
+                      </span>
+                    </div>
+                    <span style={{ fontSize: 11, color: 'var(--c-text2)' }}>
+                      Reused across {evs.length} separate records
+                    </span>
+                  </div>
+
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+                    gap: 10,
+                  }}>
+                    {evs.map(e => (
+                      <div
+                        key={e.id}
+                        style={{
+                          background: '#fff',
+                          border: '1px solid var(--c-border)',
+                          borderRadius: 4,
+                          padding: '8px 10px',
+                          fontSize: 12,
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span className="mono" style={{ fontWeight: 600, color: 'var(--c-navy)' }}>
+                            Evidence #{e.id}
+                          </span>
+                          <StatusBadge status="open" />
+                        </div>
+                        <div style={{ color: 'var(--c-text2)', marginTop: 4 }}>
+                          <Link href={`/batches/${e.batch_id}`} style={{ color: '#287D79', textDecoration: 'none' }}>
+                            Batch #{e.batch_id}
+                          </Link>
+                          <span style={{ margin: '0 4px' }}>·</span>
+                          <span>{e.evidence_type}</span>
+                        </div>
+                        <div style={{ fontSize: 11, color: 'var(--c-text2)', marginTop: 2 }}>
+                          {formatDateTime(e.uploaded_at)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Evidence table */}
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-        <div className="p-4 border-b border-gray-100 flex gap-3 items-center">
-          <label className="flex items-center gap-2 text-sm cursor-pointer">
-            <input type="checkbox" checked={filterFlagged} onChange={e => setFilterFlagged(e.target.checked)} />
-            Show flagged only ({flaggedCount})
-          </label>
-        </div>
-        <table className="w-full text-sm">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Batch ID</th>
-              <th>Type</th>
-              <th>Image Hash</th>
-              <th>Uploaded</th>
-              <th>Source</th>
-              <th>Flag</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr><td colSpan={7} className="text-center py-6 text-gray-400">Loading...</td></tr>
-            ) : displayed.map(e => (
-              <tr key={e.id} style={{ backgroundColor: e.is_flagged ? '#FFF5F5' : 'white' }}>
-                <td className="text-gray-400 text-xs">{e.id}</td>
-                <td className="font-mono text-xs text-blue-600">#{e.batch_id}</td>
-                <td className="text-xs capitalize">{e.evidence_type}</td>
-                <td className="font-mono text-xs text-gray-600">{e.image_hash || '—'}</td>
-                <td className="text-xs text-gray-500">{formatDateTime(e.uploaded_at)}</td>
-                <td className="text-xs capitalize">{e.source}</td>
-                <td>
-                  {e.is_flagged && (
-                    <span className="text-xs font-semibold text-red-600 bg-red-50 px-2 py-0.5 rounded">DUPLICATE</span>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {displayed.length === 0 && (
-          <div className="text-center py-8 text-gray-400 text-sm">No evidence records found.</div>
-        )}
+      {/* Filter Bar */}
+      <div className="filter-bar">
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer' }}>
+          <input
+            type="checkbox"
+            checked={filterFlagged}
+            onChange={e => setFilterFlagged(e.target.checked)}
+            style={{ accentColor: 'var(--c-teal)', width: 14, height: 14 }}
+          />
+          <span>Show flagged duplicate records only ({flaggedCount})</span>
+        </label>
       </div>
+
+      {/* Evidence Table */}
+      {loading ? (
+        <LoadingSpinner rows={8} label="Loading evidence records..." />
+      ) : (
+        <div className="card" style={{ overflow: 'hidden' }}>
+          <table>
+            <thead>
+              <tr>
+                <th style={{ width: 60 }}># ID</th>
+                <th>Batch</th>
+                <th>Evidence Type</th>
+                <th>Perceptual Hash</th>
+                <th>Uploaded At</th>
+                <th>Source</th>
+                <th style={{ textAlign: 'right' }}>Status Flag</th>
+              </tr>
+            </thead>
+            <tbody>
+              {displayed.map(e => (
+                <tr key={e.id}>
+                  <td className="mono" style={{ color: 'var(--c-text2)' }}>#{e.id}</td>
+                  <td>
+                    <Link
+                      href={`/batches/${e.batch_id}`}
+                      style={{ color: '#287D79', fontWeight: 500, textDecoration: 'none' }}
+                      className="mono"
+                    >
+                      Batch #{e.batch_id}
+                    </Link>
+                  </td>
+                  <td style={{ textTransform: 'capitalize' }}>{e.evidence_type}</td>
+                  <td className="mono" style={{ color: e.is_flagged ? '#B54747' : 'var(--c-text2)' }}>
+                    {e.image_hash || '—'}
+                  </td>
+                  <td style={{ fontSize: 12, color: 'var(--c-text2)' }}>
+                    {formatDateTime(e.uploaded_at)}
+                  </td>
+                  <td style={{ textTransform: 'capitalize', fontSize: 12 }}>{e.source}</td>
+                  <td style={{ textAlign: 'right' }}>
+                    {e.is_flagged ? (
+                      <StatusBadge status="open" />
+                    ) : (
+                      <span style={{ fontSize: 11, color: 'var(--c-text2)' }}>Normal</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {displayed.length === 0 && (
+            <div className="empty-state">
+              <p>No evidence records found.</p>
+            </div>
+          )}
+        </div>
+      )}
     </AppLayout>
   );
 }
