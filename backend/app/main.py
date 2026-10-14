@@ -1,13 +1,14 @@
 """
 CIVIS Lite FastAPI — main application entry point.
 All routers registered here with /api/v1 prefix.
+Auto-seeds demo users and data on startup for serverless environments.
 """
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 import os
 
-from app.database import engine, Base
+from app.database import engine, Base, SessionLocal
 from app.api import (
     dashboard, centres, batches, beneficiaries, trainers,
     attendance, evidence, assessments, placements, payments,
@@ -16,12 +17,62 @@ from app.api import (
     auth, users, notifications
 )
 
-Base.metadata.create_all(bind=engine)
+
+def _auto_seed():
+    """Seed demo users + data if the DB is empty (cold start on Vercel)."""
+    from app.models import User
+    db = SessionLocal()
+    try:
+        user_count = db.query(User).count()
+        if user_count == 0:
+            print("[CIVIS] Empty database detected — seeding demo data...")
+            db.close()
+            # Seed main demo data (centres, batches, beneficiaries, etc.)
+            try:
+                import seed_data
+                seed_data.seed_db()
+                print("[CIVIS] Demo data seeded.")
+            except Exception as e:
+                print(f"[CIVIS] seed_data: {e}")
+            # Seed user accounts
+            try:
+                from seed_users import seed_users
+                seed_users()
+                print("[CIVIS] Demo users seeded.")
+            except Exception as e:
+                print(f"[CIVIS] seed_users: {e}")
+            # Seed inspector assignments
+            try:
+                from seed_inspector_assignments import seed_inspector_assignments
+                seed_inspector_assignments()
+                print("[CIVIS] Inspector assignments seeded.")
+            except Exception as e:
+                print(f"[CIVIS] seed_inspector_assignments: {e}")
+        else:
+            print(f"[CIVIS] Database has {user_count} users — skipping seed.")
+    except Exception as e:
+        print(f"[CIVIS] Auto-seed check failed: {e}")
+    finally:
+        try:
+            db.close()
+        except Exception:
+            pass
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: create tables + auto-seed
+    Base.metadata.create_all(bind=engine)
+    _auto_seed()
+    yield
+    # Shutdown: nothing to clean up
+
 
 app = FastAPI(
     title="CIVIS Lite API",
     description="Intelligent Monitoring Prototype for Employability Development Scheme",
     version="1.0.0",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
