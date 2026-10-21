@@ -1,44 +1,54 @@
 interface Props { status: string; }
 
 const STATUS_MAP: Record<string, { bg: string; color: string; label: string }> = {
-  open:                { bg: '#FDEAEA', color: '#B54747', label: 'Open' },
-  under_review:        { bg: '#E3F2F0', color: '#287D79', label: 'Under Review' },
-  in_progress:         { bg: '#FDF3E3', color: '#B77928', label: 'In Progress' },
-  resolved:            { bg: '#EAF4EF', color: '#31785B', label: 'Resolved' },
-  dismissed:           { bg: '#EFF2F1', color: '#64717D', label: 'Dismissed' },
-  closed:              { bg: '#EAF4EF', color: '#31785B', label: 'Closed' },
-  overdue:             { bg: '#FDEAEA', color: '#B54747', label: 'Overdue' },
-  evidence_submitted:  { bg: '#FDF3E3', color: '#B77928', label: 'Evidence Submitted' },
-  scheduled:           { bg: '#E3F2F0', color: '#287D79', label: 'Scheduled' },
-  submitted:           { bg: '#EAF4EF', color: '#31785B', label: 'Submitted' },
-  compliant:           { bg: '#EAF4EF', color: '#31785B', label: 'Compliant' },
-  partially_compliant: { bg: '#FDF3E3', color: '#B77928', label: 'Partial' },
-  non_compliant:       { bg: '#FDEAEA', color: '#B54747', label: 'Non-Compliant' },
-  pending:             { bg: '#FDF3E3', color: '#B77928', label: 'Pending' },
-  active:              { bg: '#EAF4EF', color: '#31785B', label: 'Active' },
-  completed:           { bg: '#EFF2F1', color: '#64717D', label: 'Completed' },
-  cancelled:           { bg: '#EFF2F1', color: '#64717D', label: 'Cancelled' },
-  verified:            { bg: '#EAF4EF', color: '#31785B', label: 'Verified' },
-  certified:           { bg: '#EAF4EF', color: '#31785B', label: 'Certified' },
-  not_certified:       { bg: '#FDEAEA', color: '#B54747', label: 'Not Certified' },
-  paid:                { bg: '#EAF4EF', color: '#31785B', label: 'Paid' },
-  failed:              { bg: '#FDEAEA', color: '#B54747', label: 'Failed' },
+  open:                { bg: '#FFF0EF', color: '#EE5D50', label: 'Open' },
+  under_review:        { bg: '#EEF2FF', color: '#4361EE', label: 'Under Review' },
+  in_progress:         { bg: '#EEF2FF', color: '#4361EE', label: 'In Progress' },
+  resolved:            { bg: '#E6FBF3', color: '#01B574', label: 'Resolved' },
+  dismissed:           { bg: '#F4F7FE', color: '#8F9BBA', label: 'Dismissed' },
+  closed:              { bg: '#E6FBF3', color: '#01B574', label: 'Closed' },
+  overdue:             { bg: '#FFF0EF', color: '#EE5D50', label: 'Overdue' },
+  evidence_submitted:  { bg: '#FFF8EC', color: '#FFB547', label: 'Evidence Submitted' },
+  scheduled:           { bg: '#EEF2FF', color: '#4361EE', label: 'Scheduled' },
+  submitted:           { bg: '#E6FBF3', color: '#01B574', label: 'Submitted' },
+  compliant:           { bg: '#E6FBF3', color: '#01B574', label: 'Compliant' },
+  partially_compliant: { bg: '#FFF8EC', color: '#FFB547', label: 'Partial' },
+  non_compliant:       { bg: '#FFF0EF', color: '#EE5D50', label: 'Non-Compliant' },
+  pending:             { bg: '#FFF8EC', color: '#FFB547', label: 'Pending' },
+  active:              { bg: '#E6FBF3', color: '#01B574', label: 'Active' },
+  completed:           { bg: '#E6FBF3', color: '#01B574', label: 'Completed' },
+  cancelled:           { bg: '#F4F7FE', color: '#8F9BBA', label: 'Cancelled' },
+  verified:            { bg: '#E6FBF3', color: '#01B574', label: 'Verified' },
+  certified:           { bg: '#E6FBF3', color: '#01B574', label: 'Certified' },
+  not_certified:       { bg: '#FFF0EF', color: '#EE5D50', label: 'Not Certified' },
+  paid:                { bg: '#E6FBF3', color: '#01B574', label: 'Paid' },
+  failed:              { bg: '#FFF0EF', color: '#EE5D50', label: 'Failed' },
 };
 
 export default function StatusBadge({ status }: Props) {
-  const s = STATUS_MAP[status?.toLowerCase()] ?? { bg: '#EFF2F1', color: '#64717D', label: status };
+  const s = STATUS_MAP[status?.toLowerCase()] ?? { bg: '#F4F7FE', color: '#8F9BBA', label: status };
   return (
     <span style={{
       backgroundColor: s.bg,
       color: s.color,
-      fontSize: '11px',
+      fontSize: '12px',
       fontWeight: 500,
-      padding: '2px 8px',
-      borderRadius: '3px',
+      padding: '3px 10px',
+      borderRadius: '50px',
       whiteSpace: 'nowrap',
-      display: 'inline-block',
-      letterSpacing: '0.02em',
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 6,
+      letterSpacing: '0.01em',
     }}>
+      <span style={{
+        width: 6,
+        height: 6,
+        borderRadius: '50%',
+        backgroundColor: s.color,
+        display: 'inline-block',
+        flexShrink: 0,
+      }} />
       {s.label}
     </span>
   );

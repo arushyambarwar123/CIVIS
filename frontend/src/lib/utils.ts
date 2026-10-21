@@ -25,45 +25,45 @@ export function formatDateTime(d: string | null | undefined): string {
 
 export function riskColor(level: string): string {
   const map: Record<string, string> = {
-    low: '#31785B', medium: '#B77928', high: '#C46A00', critical: '#B54747',
+    low: '#01B574', medium: '#FFB547', high: '#FF8800', critical: '#EE5D50',
   };
-  return map[level?.toLowerCase()] ?? '#64717D';
+  return map[level?.toLowerCase()] ?? '#8F9BBA';
 }
 
 export function riskBg(level: string): string {
   const map: Record<string, string> = {
-    low: '#EAF4EF', medium: '#FDF3E3', high: '#FDF0E3', critical: '#FDEAEA',
+    low: '#E6FBF3', medium: '#FFF8EC', high: '#FFF2E5', critical: '#FFF0EF',
   };
-  return map[level?.toLowerCase()] ?? '#EFF2F1';
+  return map[level?.toLowerCase()] ?? '#F4F7FE';
 }
 
 
 export function statusBg(status: string): string {
   const map: Record<string, string> = {
-    open: '#F8D7DA', in_progress: '#FFF3CD', under_review: '#D1ECF1',
-    resolved: '#D1E7DD', dismissed: '#E9ECEF', closed: '#D1E7DD',
-    overdue: '#F8D7DA', evidence_submitted: '#FFF3CD', scheduled: '#D1ECF1',
-    submitted: '#D1E7DD', compliant: '#D1E7DD', partially_compliant: '#FFF3CD',
-    non_compliant: '#F8D7DA', pending: '#FFF3CD', active: '#D1E7DD',
-    completed: '#D1E7DD', cancelled: '#E9ECEF', verified: '#D1E7DD',
-    certified: '#D1E7DD', paid: '#D1E7DD', failed: '#F8D7DA',
-    not_certified: '#F8D7DA',
+    open: '#FFF0EF', in_progress: '#EEF2FF', under_review: '#E6FBF3',
+    resolved: '#E6FBF3', dismissed: '#F4F7FE', closed: '#E6FBF3',
+    overdue: '#FFF0EF', evidence_submitted: '#FFF8EC', scheduled: '#EEF2FF',
+    submitted: '#E6FBF3', compliant: '#E6FBF3', partially_compliant: '#FFF8EC',
+    non_compliant: '#FFF0EF', pending: '#FFF8EC', active: '#E6FBF3',
+    completed: '#E6FBF3', cancelled: '#F4F7FE', verified: '#E6FBF3',
+    certified: '#E6FBF3', paid: '#E6FBF3', failed: '#FFF0EF',
+    not_certified: '#FFF0EF',
   };
-  return map[status?.toLowerCase()] ?? '#E9ECEF';
+  return map[status?.toLowerCase()] ?? '#F4F7FE';
 }
 
 export function statusText(status: string): string {
   const map: Record<string, string> = {
-    open: '#842029', in_progress: '#664D03', under_review: '#0C5460',
-    resolved: '#0A3622', dismissed: '#495057', closed: '#0A3622',
-    overdue: '#842029', evidence_submitted: '#664D03', scheduled: '#0C5460',
-    submitted: '#0A3622', compliant: '#0A3622', partially_compliant: '#664D03',
-    non_compliant: '#842029', pending: '#664D03', active: '#0A3622',
-    completed: '#0A3622', cancelled: '#495057', verified: '#0A3622',
-    paid: '#0A3622', failed: '#842029', certified: '#0A3622',
-    not_certified: '#842029',
+    open: '#EE5D50', in_progress: '#4361EE', under_review: '#01B574',
+    resolved: '#01B574', dismissed: '#8F9BBA', closed: '#01B574',
+    overdue: '#EE5D50', evidence_submitted: '#FFB547', scheduled: '#4361EE',
+    submitted: '#01B574', compliant: '#01B574', partially_compliant: '#FFB547',
+    non_compliant: '#EE5D50', pending: '#FFB547', active: '#01B574',
+    completed: '#01B574', cancelled: '#8F9BBA', verified: '#01B574',
+    paid: '#01B574', failed: '#EE5D50', certified: '#01B574',
+    not_certified: '#EE5D50',
   };
-  return map[status?.toLowerCase()] ?? '#495057';
+  return map[status?.toLowerCase()] ?? '#8F9BBA';
 }
 
 export function capitalize(s: string): string {

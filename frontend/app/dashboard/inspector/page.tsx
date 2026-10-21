@@ -40,7 +40,6 @@ export default function InspectorDashboardPage() {
     }
 
     if (s.role !== 'INSPECTOR') {
-      // Wrong role — send them to their own dashboard
       router.replace(roleHomePath(s.role));
       return;
     }
@@ -73,14 +72,13 @@ export default function InspectorDashboardPage() {
     }
   }
 
-  // Guard: still loading or wrong role (redirect already triggered above)
   if (loading && !session) {
     return (
       <div style={{
         minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: 'var(--c-bg)', color: 'var(--c-text2)', fontSize: 13,
+        background: 'var(--c-bg, #F4F7FE)', color: 'var(--c-text2, #8F9BBA)', fontSize: 13,
       }}>
-        Loading...
+        Loading Inspector Workspace...
       </div>
     );
   }
@@ -93,46 +91,26 @@ export default function InspectorDashboardPage() {
           style={{
             maxWidth: 580,
             margin: '40px auto',
-            padding: '32px 28px',
+            padding: '36px 32px',
             textAlign: 'center',
           }}
         >
-          <div
-            style={{
-              fontSize: 11,
-              fontWeight: 600,
-              color: '#B54747',
-              textTransform: 'uppercase',
-              letterSpacing: '0.08em',
-              marginBottom: 10,
-            }}
-          >
+          <div style={{
+            fontSize: 12,
+            fontWeight: 700,
+            color: 'var(--c-danger, #EE5D50)',
+            textTransform: 'uppercase',
+            letterSpacing: '0.08em',
+            marginBottom: 10,
+          }}>
             403 Forbidden
           </div>
-          <h2
-            style={{
-              fontSize: 20,
-              fontWeight: 600,
-              color: 'var(--c-navy)',
-              marginBottom: 8,
-            }}
-          >
-            Access Denied
+          <h2 style={{ fontSize: 20, fontWeight: 700, color: 'var(--c-text, #2B3674)', marginBottom: 8 }}>
+            Access Restricted
           </h2>
-          <p
-            style={{
-              fontSize: 13,
-              color: 'var(--c-text2)',
-              lineHeight: '20px',
-              marginBottom: 24,
-            }}
-          >
-            This page is restricted to Field Inspectors only. You are currently
-            signed in with role{' '}
-            <strong className="mono" style={{ color: 'var(--c-text)' }}>
-              {session?.role || 'None'}
-            </strong>
-            .
+          <p style={{ fontSize: 14, color: 'var(--c-text2, #8F9BBA)', lineHeight: 1.5, marginBottom: 24 }}>
+            This page is restricted to Field Inspectors only. You are currently logged in with role{' '}
+            <strong style={{ color: 'var(--c-accent, #4361EE)' }}>{session?.role || 'None'}</strong>.
           </p>
           <button
             type="button"
@@ -162,16 +140,15 @@ export default function InspectorDashboardPage() {
   const inProgressCount = inProgressList.length;
   const completedCount = completedList.length;
   const totalCount = inspections.length;
-
   const upcomingAndActive = [...inProgressList, ...pendingList];
 
   return (
     <AppLayout>
       {/* Top Banner */}
-      <div style={{ marginBottom: 20 }}>
-        <h1 className="page-title">Inspector Dashboard</h1>
+      <div style={{ marginBottom: 24 }}>
+        <h1 className="page-title">Field Inspector Command</h1>
         <p className="page-subtitle">
-          Field inspection assignments, active site audits, and submitted findings
+          On-site physical audits, trainee headcount verifications, and compliance findings
         </p>
       </div>
 
@@ -179,367 +156,302 @@ export default function InspectorDashboardPage() {
       <div
         className="card"
         style={{
-          padding: '16px 20px',
-          marginBottom: 20,
+          padding: '20px 24px',
+          marginBottom: 24,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           flexWrap: 'wrap',
-          gap: 12,
+          gap: 16,
         }}
       >
         <div>
           <div className="section-label" style={{ marginBottom: 4 }}>
-            Assigned Field Inspector
+            Active Field Inspector
           </div>
-          <div
-            style={{
-              fontSize: 18,
-              fontWeight: 600,
-              color: 'var(--c-navy)',
-              letterSpacing: '-0.01em',
-            }}
-          >
+          <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--c-text, #2B3674)' }}>
             {session.name}
           </div>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 16,
-              marginTop: 6,
-              fontSize: 12,
-              color: 'var(--c-text2)',
-              flexWrap: 'wrap',
-            }}
-          >
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 14,
+            marginTop: 6,
+            fontSize: 13,
+            color: 'var(--c-text2, #8F9BBA)',
+            flexWrap: 'wrap',
+          }}>
             <span>
-              Inspector ID:{' '}
-              <strong className="mono" style={{ color: 'var(--c-text)' }}>
-                {session.inspector_id || session.employee_id}
-              </strong>
+              Inspector ID: <strong className="mono" style={{ color: 'var(--c-text, #2B3674)' }}>{session.inspector_id || session.employee_id}</strong>
             </span>
             <span>&bull;</span>
             <span>
-              Assigned Area:{' '}
-              <strong style={{ color: 'var(--c-text)' }}>
-                {session.assigned_area || session.region || 'Field Division'}
-              </strong>
+              Assigned Area: <strong style={{ color: 'var(--c-text, #2B3674)' }}>{session.assigned_area || session.region || 'Regional Sector'}</strong>
             </span>
             <span>&bull;</span>
             <span>
-              Region:{' '}
-              <strong style={{ color: 'var(--c-text)' }}>
-                {session.region || 'National'}
-              </strong>
+              Jurisdiction: <strong style={{ color: 'var(--c-text, #2B3674)' }}>{session.region || 'National'}</strong>
             </span>
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div>
           <Link href="/inspector/inspections" className="btn btn-ghost btn-sm">
-            View All Inspections
+            View All Assigned ({totalCount})
           </Link>
         </div>
       </div>
 
-      {/* Metric Cards */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
-          gap: 16,
-          marginBottom: 24,
-        }}
-      >
+      {/* Metric Cards Grid */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+        gap: 18,
+        marginBottom: 24,
+      }}>
         <MetricCard
-          label="Pending Inspections"
+          label="Pending Audits"
           value={pendingCount}
           sub="Scheduled for on-site visit"
           accent={pendingCount > 0 ? 'warning' : 'default'}
+          icon={
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+          }
         />
         <MetricCard
           label="In Progress"
           value={inProgressCount}
-          sub="Active field verifications"
-          accent="default"
+          sub="Active field verification"
+          accent="info"
+          icon={
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
+            </svg>
+          }
         />
         <MetricCard
           label="Completed"
           value={completedCount}
           sub="Submitted verification reports"
           accent="positive"
+          icon={
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          }
         />
         <MetricCard
           label="Total Assigned"
           value={totalCount}
           sub="Cumulative inspection load"
-          accent="default"
+          icon={
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+              <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+            </svg>
+          }
         />
       </div>
 
       {error && (
-        <div
-          style={{
-            padding: '12px 16px',
-            borderRadius: 4,
-            backgroundColor: '#FDEAEA',
-            border: '1px solid #DCE2E3',
-            color: '#B54747',
-            fontSize: 13,
-            marginBottom: 20,
-          }}
-        >
+        <div style={{
+          padding: '14px 18px',
+          borderRadius: 'var(--radius-sm, 8px)',
+          backgroundColor: 'var(--c-danger-bg, #FFF0EF)',
+          border: '1px solid #FFD3CE',
+          color: 'var(--c-danger, #EE5D50)',
+          fontSize: 13,
+          marginBottom: 24,
+        }}>
           {error}
         </div>
       )}
 
       {loading ? (
-        <LoadingSpinner rows={6} label="Loading assigned inspections..." />
+        <LoadingSpinner rows={6} label="Fetching assigned site roster..." />
       ) : (
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))',
-            gap: 20,
-            alignItems: 'start',
-          }}
-        >
-          {/* Upcoming & Pending Section */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(440px, 1fr))',
+          gap: 24,
+          alignItems: 'start',
+        }}>
+          {/* Upcoming & Active Section */}
           <div className="card">
             <div className="card-header">
               <div>
-                <span className="section-label">Upcoming &amp; Active</span>
-                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--c-navy)', marginTop: 2 }}>
-                  Pending Site Inspections ({upcomingAndActive.length})
+                <span className="section-label">Active Site Visits</span>
+                <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--c-text, #2B3674)', marginTop: 2 }}>
+                  Pending Verification ({upcomingAndActive.length})
                 </div>
               </div>
-              <Link
-                href="/inspector/inspections"
-                className="btn btn-ghost btn-sm"
-                style={{ fontSize: 11 }}
-              >
-                Inspect All
+              <Link href="/inspector/inspections" className="btn btn-ghost btn-sm">
+                View All
               </Link>
             </div>
 
-            <div className="card-body" style={{ padding: 0 }}>
+            <div style={{ padding: 0 }}>
               {upcomingAndActive.length === 0 ? (
-                <div className="empty-state">
-                  <p>No pending or active inspections assigned to your roster.</p>
+                <div style={{ padding: 36, textAlign: 'center', color: 'var(--c-text3, #A3AED0)', fontSize: 13 }}>
+                  No pending inspections assigned.
                 </div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  {upcomingAndActive.map((insp, idx) => {
-                    const centre = centresMap[insp.centre_id];
-                    const centreName = centre?.centre_name || `Centre #${insp.centre_id}`;
-                    const centreCode = centre?.centre_code || `CTR-${insp.centre_id}`;
-                    const location = centre ? `${centre.district}, ${centre.state}` : 'Location on file';
+                upcomingAndActive.map((insp, idx) => {
+                  const centre = centresMap[insp.centre_id];
+                  const centreName = centre?.centre_name || `Centre #${insp.centre_id}`;
+                  const centreCode = centre?.centre_code || `CTR-${insp.centre_id}`;
+                  const location = centre ? `${centre.district}, ${centre.state}` : 'Location on record';
 
-                    return (
-                      <div
-                        key={insp.id}
-                        style={{
-                          padding: '14px 18px',
-                          borderBottom:
-                            idx < upcomingAndActive.length - 1
-                              ? '1px solid var(--c-border)'
-                              : 'none',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          gap: 12,
-                        }}
-                      >
-                        <div style={{ minWidth: 0, flex: 1 }}>
-                          <div
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 8,
-                              marginBottom: 2,
-                            }}
-                          >
-                            <Link
-                              href={`/inspections/${insp.id}`}
-                              style={{
-                                fontSize: 13,
-                                fontWeight: 600,
-                                color: 'var(--c-teal)',
-                                textDecoration: 'none',
-                              }}
-                            >
-                              {centreName}
-                            </Link>
-                            <span
-                              className="mono"
-                              style={{ fontSize: 11, color: 'var(--c-text2)' }}
-                            >
-                              {centreCode}
-                            </span>
-                          </div>
-                          <div
-                            style={{
-                              fontSize: 12,
-                              color: 'var(--c-text2)',
-                              display: 'flex',
-                              gap: 12,
-                              flexWrap: 'wrap',
-                              marginTop: 2,
-                            }}
-                          >
-                            <span>{location}</span>
-                            <span>&bull;</span>
-                            <span>
-                              Scheduled: {formatDate(insp.inspection_date)}
-                            </span>
-                            {insp.batch_id && (
-                              <>
-                                <span>&bull;</span>
-                                <span className="mono">Batch #{insp.batch_id}</span>
-                              </>
-                            )}
-                          </div>
-                        </div>
-
-                        <div
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 10,
-                            flexShrink: 0,
-                          }}
-                        >
-                          <StatusBadge status={insp.status} />
+                  return (
+                    <div
+                      key={insp.id}
+                      style={{
+                        padding: '14px 20px',
+                        borderBottom: idx < upcomingAndActive.length - 1 ? '1px solid var(--c-border, #E9EDF7)' : 'none',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: 12,
+                      }}
+                    >
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
                           <Link
                             href={`/inspections/${insp.id}`}
-                            className="btn btn-ghost btn-sm"
-                            style={{ padding: '4px 8px', fontSize: 11 }}
+                            style={{
+                              fontSize: 14,
+                              fontWeight: 600,
+                              color: 'var(--c-accent, #4361EE)',
+                              textDecoration: 'none',
+                            }}
                           >
-                            Conduct
+                            {centreName}
                           </Link>
+                          <span className="mono" style={{ fontSize: 12, color: 'var(--c-text3, #A3AED0)' }}>
+                            {centreCode}
+                          </span>
+                        </div>
+                        <div style={{
+                          fontSize: 12,
+                          color: 'var(--c-text2, #8F9BBA)',
+                          display: 'flex',
+                          gap: 10,
+                          flexWrap: 'wrap',
+                          marginTop: 3,
+                        }}>
+                          <span>{location}</span>
+                          <span>&bull;</span>
+                          <span>Scheduled: {formatDate(insp.inspection_date)}</span>
+                          {insp.batch_id && (
+                            <>
+                              <span>&bull;</span>
+                              <span className="mono">Batch #{insp.batch_id}</span>
+                            </>
+                          )}
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+                        <StatusBadge status={insp.status} />
+                        <Link
+                          href={`/inspections/${insp.id}`}
+                          className="btn btn-primary btn-sm"
+                          style={{ padding: '6px 12px', fontSize: 12 }}
+                        >
+                          Conduct
+                        </Link>
+                      </div>
+                    </div>
+                  );
+                })
               )}
             </div>
           </div>
 
-          {/* Recently Completed Section */}
+          {/* Submission History Section */}
           <div className="card">
             <div className="card-header">
               <div>
-                <span className="section-label">Submission History</span>
-                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--c-navy)', marginTop: 2 }}>
-                  Recently Completed ({completedList.length})
+                <span className="section-label">Report Archive</span>
+                <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--c-text, #2B3674)', marginTop: 2 }}>
+                  Completed Reports ({completedList.length})
                 </div>
               </div>
-              <span
-                className="mono"
-                style={{ fontSize: 11, color: 'var(--c-text2)' }}
-              >
-                Submitted Reports
-              </span>
             </div>
 
-            <div className="card-body" style={{ padding: 0 }}>
+            <div style={{ padding: 0 }}>
               {completedList.length === 0 ? (
-                <div className="empty-state">
-                  <p>No completed inspection reports submitted yet.</p>
+                <div style={{ padding: 36, textAlign: 'center', color: 'var(--c-text3, #A3AED0)', fontSize: 13 }}>
+                  No completed reports submitted yet.
                 </div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  {completedList.map((insp, idx) => {
-                    const centre = centresMap[insp.centre_id];
-                    const centreName = centre?.centre_name || `Centre #${insp.centre_id}`;
-                    const centreCode = centre?.centre_code || `CTR-${insp.centre_id}`;
+                completedList.map((insp, idx) => {
+                  const centre = centresMap[insp.centre_id];
+                  const centreName = centre?.centre_name || `Centre #${insp.centre_id}`;
+                  const centreCode = centre?.centre_code || `CTR-${insp.centre_id}`;
 
-                    return (
-                      <div
-                        key={insp.id}
-                        style={{
-                          padding: '14px 18px',
-                          borderBottom:
-                            idx < completedList.length - 1
-                              ? '1px solid var(--c-border)'
-                              : 'none',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          gap: 12,
-                        }}
-                      >
-                        <div style={{ minWidth: 0, flex: 1 }}>
-                          <div
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 8,
-                              marginBottom: 2,
-                            }}
-                          >
-                            <Link
-                              href={`/inspections/${insp.id}`}
-                              style={{
-                                fontSize: 13,
-                                fontWeight: 500,
-                                color: 'var(--c-navy)',
-                                textDecoration: 'none',
-                              }}
-                            >
-                              {centreName}
-                            </Link>
-                            <span
-                              className="mono"
-                              style={{ fontSize: 11, color: 'var(--c-text2)' }}
-                            >
-                              {centreCode}
-                            </span>
-                          </div>
-                          <div
-                            style={{
-                              fontSize: 12,
-                              color: 'var(--c-text2)',
-                              display: 'flex',
-                              gap: 12,
-                              marginTop: 2,
-                            }}
-                          >
-                            <span>Date: {formatDate(insp.inspection_date)}</span>
-                            {insp.duration_minutes !== null && (
-                              <>
-                                <span>&bull;</span>
-                                <span>{insp.duration_minutes} mins duration</span>
-                              </>
-                            )}
-                          </div>
-                        </div>
-
-                        <div
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 8,
-                            flexShrink: 0,
-                          }}
-                        >
-                          <StatusBadge
-                            status={insp.compliance_status || 'compliant'}
-                          />
+                  return (
+                    <div
+                      key={insp.id}
+                      style={{
+                        padding: '14px 20px',
+                        borderBottom: idx < completedList.length - 1 ? '1px solid var(--c-border, #E9EDF7)' : 'none',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: 12,
+                      }}
+                    >
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
                           <Link
                             href={`/inspections/${insp.id}`}
-                            className="btn btn-ghost btn-sm"
-                            style={{ padding: '4px 8px', fontSize: 11 }}
+                            style={{
+                              fontSize: 14,
+                              fontWeight: 600,
+                              color: 'var(--c-text, #2B3674)',
+                              textDecoration: 'none',
+                            }}
                           >
-                            View
+                            {centreName}
                           </Link>
+                          <span className="mono" style={{ fontSize: 12, color: 'var(--c-text3, #A3AED0)' }}>
+                            {centreCode}
+                          </span>
+                        </div>
+                        <div style={{
+                          fontSize: 12,
+                          color: 'var(--c-text2, #8F9BBA)',
+                          display: 'flex',
+                          gap: 10,
+                          marginTop: 3,
+                        }}>
+                          <span>Date: {formatDate(insp.inspection_date)}</span>
+                          {insp.duration_minutes !== null && (
+                            <>
+                              <span>&bull;</span>
+                              <span>{insp.duration_minutes} mins duration</span>
+                            </>
+                          )}
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+                        <StatusBadge status={insp.compliance_status || 'compliant'} />
+                        <Link
+                          href={`/inspections/${insp.id}`}
+                          className="btn btn-ghost btn-sm"
+                          style={{ padding: '6px 12px', fontSize: 12 }}
+                        >
+                          View
+                        </Link>
+                      </div>
+                    </div>
+                  );
+                })
               )}
             </div>
           </div>

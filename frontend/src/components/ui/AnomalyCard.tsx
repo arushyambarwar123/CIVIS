@@ -12,37 +12,63 @@ export default function AnomalyCard({ anomaly, onClick, compact }: Props) {
     <div
       onClick={onClick}
       style={{
-        background: '#fff',
-        border: '1px solid #DCE2E3',
-        borderRadius: 4,
+        background: '#FFFFFF',
+        border: '1px solid var(--c-border, #E9EDF7)',
+        borderRadius: 'var(--radius-lg, 16px)',
+        boxShadow: '0 3.5px 5.5px rgba(0,0,0,0.02)',
         cursor: onClick ? 'pointer' : 'default',
-        transition: 'border-color 0.12s',
+        transition: 'all 0.15s ease',
+        overflow: 'hidden',
       }}
-      onMouseEnter={e => onClick && ((e.currentTarget as HTMLElement).style.borderColor = '#287D79')}
-      onMouseLeave={e => onClick && ((e.currentTarget as HTMLElement).style.borderColor = '#DCE2E3')}
+      onMouseEnter={e => onClick && ((e.currentTarget as HTMLElement).style.borderColor = 'var(--c-accent, #4361EE)')}
+      onMouseLeave={e => onClick && ((e.currentTarget as HTMLElement).style.borderColor = 'var(--c-border, #E9EDF7)')}
     >
-      <div style={{ padding: compact ? '10px 14px' : '14px 16px' }}>
+      <div style={{ padding: compact ? '14px 18px' : '18px 22px' }}>
         {/* Top row */}
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 4 }}>
-              {/* Severity badge — no colored stripe, just a semantic pill */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
+              {/* Severity badge pill */}
               <span style={{
-                backgroundColor: bg, color,
-                fontSize: 10, fontWeight: 600, letterSpacing: '0.06em',
-                padding: '2px 7px', borderRadius: 3,
+                backgroundColor: bg,
+                color,
+                fontSize: 11,
+                fontWeight: 600,
+                letterSpacing: '0.04em',
+                padding: '2px 8px',
+                borderRadius: '50px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 5,
               }}>
+                <span style={{
+                  width: 5,
+                  height: 5,
+                  borderRadius: '50%',
+                  backgroundColor: color,
+                  display: 'inline-block',
+                }} />
                 {anomaly.severity.toUpperCase()}
               </span>
-              <span style={{ fontSize: 13, fontWeight: 500, color: '#202B35' }}>
+              <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--c-text, #2B3674)' }}>
                 {anomalyTypeLabel(anomaly.anomaly_type)}
               </span>
-              <span style={{ fontSize: 11, color: '#A0AEB0' }}>
+              <span style={{
+                fontSize: 12,
+                color: 'var(--c-text3, #A3AED0)',
+                background: 'var(--c-surface2, #F0F3F9)',
+                padding: '2px 8px',
+                borderRadius: '4px',
+                fontFamily: 'monospace',
+              }}>
                 {anomaly.entity_type} #{anomaly.entity_id}
               </span>
             </div>
             <p style={{
-              fontSize: 13, color: '#4A5568', lineHeight: '20px', margin: 0,
+              fontSize: 13,
+              color: 'var(--c-text2, #8F9BBA)',
+              lineHeight: '20px',
+              margin: '6px 0 0',
             }}>
               {compact ? truncate(anomaly.description, 110) : anomaly.description}
             </p>
@@ -53,17 +79,21 @@ export default function AnomalyCard({ anomaly, onClick, compact }: Props) {
         {/* Recommended action */}
         {!compact && anomaly.recommended_action && (
           <div style={{
-            marginTop: 10, padding: '8px 12px',
-            background: '#F0F9F8', border: '1px solid #C8E8E6',
-            borderRadius: 3, fontSize: 12, color: '#287D79',
+            marginTop: 12,
+            padding: '10px 14px',
+            background: 'var(--c-surface2, #F0F3F9)',
+            border: '1px solid var(--c-border, #E9EDF7)',
+            borderRadius: 'var(--radius-sm, 8px)',
+            fontSize: 13,
+            color: 'var(--c-text, #2B3674)',
           }}>
-            <span style={{ fontWeight: 500 }}>Recommended: </span>
+            <span style={{ fontWeight: 600, color: 'var(--c-accent, #4361EE)' }}>Recommended Action: </span>
             {anomaly.recommended_action}
           </div>
         )}
 
-        <div style={{ marginTop: 6, fontSize: 11, color: '#A0AEB0' }}>
-          {formatDateTime(anomaly.detected_at)}
+        <div style={{ marginTop: 10, fontSize: 12, color: 'var(--c-text3, #A3AED0)' }}>
+          Detected: {formatDateTime(anomaly.detected_at)}
         </div>
       </div>
     </div>

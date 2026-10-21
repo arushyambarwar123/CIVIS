@@ -12,20 +12,23 @@ export default function RiskBadge({ level, score, size = 'md' }: Props) {
     <span style={{
       backgroundColor: bg,
       color,
-      padding: isSmall ? '2px 7px' : '3px 9px',
-      fontSize: isSmall ? '11px' : '11px',
+      padding: isSmall ? '2px 8px' : '3px 10px',
+      fontSize: isSmall ? '11px' : '12px',
       fontWeight: 600,
       letterSpacing: '0.04em',
-      borderRadius: '3px',
+      borderRadius: '50px',
       whiteSpace: 'nowrap',
       display: 'inline-flex',
       alignItems: 'center',
-      gap: 5,
-      fontFamily: 'IBM Plex Sans, sans-serif',
+      gap: 6,
     }}>
       <span style={{
-        width: 5, height: 5, borderRadius: '50%',
-        backgroundColor: color, display: 'inline-block', flexShrink: 0,
+        width: 6,
+        height: 6,
+        borderRadius: '50%',
+        backgroundColor: color,
+        display: 'inline-block',
+        flexShrink: 0,
       }} />
       {label}{score !== undefined ? ` ${score}` : ''}
     </span>
