@@ -8,6 +8,7 @@ import RiskBadge from '@/components/ui/RiskBadge';
 import StatusBadge from '@/components/ui/StatusBadge';
 import AnomalyCard from '@/components/ui/AnomalyCard';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import EmptyState from '@/components/ui/EmptyState';
 import { api } from '@/lib/api';
 import { formatDate, riskColor } from '@/lib/utils';
 
@@ -135,8 +136,8 @@ export default function CentreProfilePage() {
       <div style={{
         display: 'flex',
         gap: 24,
-        borderBottom: '1px solid var(--c-border)',
-        marginBottom: 20,
+        borderBottom: '1px solid var(--c-border, #E2E8F0)',
+        marginBottom: 24,
         overflowX: 'auto',
       }}>
         {TABS.map(tab => {
@@ -148,14 +149,15 @@ export default function CentreProfilePage() {
               style={{
                 background: 'none',
                 border: 'none',
-                borderBottom: active ? '2px solid var(--c-teal)' : '2px solid transparent',
-                color: active ? 'var(--c-teal)' : 'var(--c-text2)',
-                fontWeight: active ? 600 : 400,
-                fontSize: 13,
-                padding: '8px 4px',
+                borderBottom: active ? '2px solid var(--c-accent, #4361EE)' : '2px solid transparent',
+                color: active ? 'var(--c-accent, #4361EE)' : 'var(--c-text2, #5A6A85)',
+                fontWeight: active ? 600 : 500,
+                fontSize: 13.5,
+                padding: '10px 4px',
                 cursor: 'pointer',
                 marginBottom: -1,
                 whiteSpace: 'nowrap',
+                transition: 'all 0.12s ease',
               }}
             >
               {tab.label}
@@ -300,9 +302,11 @@ export default function CentreProfilePage() {
               </div>
               <div className="card-body">
                 {(!anomalies || anomalies.length === 0) ? (
-                  <div className="empty-state" style={{ padding: '24px 0' }}>
-                    <p>No anomalies detected for this centre.</p>
-                  </div>
+                  <EmptyState
+                    title="No Anomalies Flagged"
+                    message="No active heuristic signals or compliance deviations recorded for this centre."
+                    compact
+                  />
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {anomalies.slice(0, 3).map((a: any) => (
@@ -326,9 +330,10 @@ export default function CentreProfilePage() {
           </div>
           <div className="card-body">
             {(!anomalies || anomalies.length === 0) ? (
-              <div className="empty-state">
-                <p>No anomalies detected for this centre.</p>
-              </div>
+              <EmptyState
+                title="No Anomalies Flagged"
+                message="No irregularities have been reported for this training centre."
+              />
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {anomalies.map((a: any) => (
@@ -378,9 +383,10 @@ export default function CentreProfilePage() {
             </tbody>
           </table>
           {(!batches || batches.length === 0) && (
-            <div className="empty-state">
-              <p>No batches registered for this centre.</p>
-            </div>
+            <EmptyState
+              title="No Batches Found"
+              message="No training batches are currently registered under this facility."
+            />
           )}
         </div>
       )}
@@ -454,9 +460,10 @@ export default function CentreProfilePage() {
               </tbody>
             </table>
             {(!inspections || inspections.length === 0) && (
-              <div className="empty-state">
-                <p>No inspections recorded yet.</p>
-              </div>
+              <EmptyState
+                title="No Inspections Recorded"
+                message="This facility has no prior physical inspection audit logs on file."
+              />
             )}
           </div>
         </div>
@@ -490,9 +497,10 @@ export default function CentreProfilePage() {
             </tbody>
           </table>
           {(!corrective_actions || corrective_actions.length === 0) && (
-            <div className="empty-state">
-              <p>No corrective actions required for this centre.</p>
-            </div>
+            <EmptyState
+              title="No Corrective Actions"
+              message="No remedial compliance measures are currently required for this centre."
+            />
           )}
         </div>
       )}

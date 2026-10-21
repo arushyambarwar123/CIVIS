@@ -317,7 +317,7 @@ function Sidebar({ session }: { session: CivisSession }) {
       </div>
 
       {/* Navigation Links */}
-      <nav style={{ flex: 1, overflowY: 'auto', padding: '16px 14px' }}>
+      <nav style={{ flex: 1, overflowY: 'auto', padding: '16px 12px' }}>
         {navItems.map((item, i) => {
           if ('type' in item && item.type === 'group') {
             return (
@@ -328,7 +328,7 @@ function Sidebar({ session }: { session: CivisSession }) {
                   fontWeight: 700,
                   letterSpacing: '0.06em',
                   textTransform: 'uppercase',
-                  color: 'var(--c-text3, #A3AED0)',
+                  color: 'var(--c-text3, #75839C)',
                   padding: '18px 12px 6px',
                 }}
               >
@@ -347,44 +347,35 @@ function Sidebar({ session }: { session: CivisSession }) {
                 display: 'flex',
                 alignItems: 'center',
                 gap: 12,
-                padding: '10px 14px',
-                borderRadius: 'var(--radius-md, 12px)',
-                marginBottom: 4,
+                padding: '9px 12px',
+                borderRadius: 'var(--radius-sm, 8px)',
+                marginBottom: 3,
                 fontSize: 13,
                 fontWeight: active ? 600 : 500,
-                color: active ? 'var(--c-accent, #4361EE)' : 'var(--c-text2, #8F9BBA)',
-                background: active ? 'var(--c-info-bg, #EEF2FF)' : 'transparent',
+                color: active ? 'var(--c-accent, #4361EE)' : 'var(--c-text2, #5A6A85)',
+                background: active ? 'rgba(67, 97, 238, 0.08)' : 'transparent',
+                boxShadow: active ? 'inset 3px 0 0 var(--c-accent, #4361EE)' : 'none',
                 textDecoration: 'none',
                 transition: 'all 0.15s ease',
               }}
               onMouseEnter={(e) => {
                 if (!active) {
                   e.currentTarget.style.background = 'var(--c-surface2, #F0F3F9)';
-                  e.currentTarget.style.color = 'var(--c-text, #2B3674)';
+                  e.currentTarget.style.color = 'var(--c-text, #1E293B)';
                 }
               }}
               onMouseLeave={(e) => {
                 if (!active) {
                   e.currentTarget.style.background = 'transparent';
-                  e.currentTarget.style.color = 'var(--c-text2, #8F9BBA)';
+                  e.currentTarget.style.color = 'var(--c-text2, #5A6A85)';
                 }
               }}
             >
               <IconComponent
-                size={18}
-                color={active ? 'var(--c-accent, #4361EE)' : 'var(--c-text3, #A3AED0)'}
+                size={17}
+                color={active ? 'var(--c-accent, #4361EE)' : 'var(--c-text3, #75839C)'}
               />
               <span style={{ flex: 1 }}>{navLink.label}</span>
-              {active && (
-                <span
-                  style={{
-                    width: 4,
-                    height: 16,
-                    borderRadius: 2,
-                    background: 'var(--c-accent, #4361EE)',
-                  }}
-                />
-              )}
             </Link>
           );
         })}

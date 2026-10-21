@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getSession, roleHomePath, roleLabel, CivisSession } from '@/lib/auth';
+import { getSession, roleHomePath, CivisSession } from '@/lib/auth';
 
 export default function NotFoundPage() {
   const router = useRouter();
@@ -18,8 +18,13 @@ export default function NotFoundPage() {
   if (!ready) {
     return (
       <div style={{
-        minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: '#F7F8F6', color: '#64717D', fontSize: 13,
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'var(--c-bg, #F4F7FE)',
+        color: 'var(--c-text2, #5A6A85)',
+        fontSize: 13,
       }}>
         Loading...
       </div>
@@ -27,7 +32,6 @@ export default function NotFoundPage() {
   }
 
   const dashboardPath = session ? roleHomePath(session.role) : '/login';
-  const dashboardLabel = session ? `${roleLabel(session.role)} Dashboard` : 'Sign In';
 
   return (
     <div style={{
@@ -36,91 +40,96 @@ export default function NotFoundPage() {
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      background: '#F7F8F6',
-      padding: '40px 24px',
+      background: 'var(--c-bg, #F4F7FE)',
+      padding: '24px',
     }}>
-      <div style={{
-        width: '100%',
-        maxWidth: 460,
-        background: '#fff',
-        border: '1px solid #DCE2E3',
-        borderRadius: 4,
-        padding: '40px 32px',
-        textAlign: 'center',
-      }}>
-        {/* 404 tag */}
+      <div
+        className="card"
+        style={{
+          width: '100%',
+          maxWidth: 440,
+          padding: '36px 32px',
+          textAlign: 'center',
+          boxShadow: 'var(--shadow-md, 0 2px 8px rgba(0,0,0,0.06))',
+        }}
+      >
+        {/* Subtle Icon */}
         <div style={{
-          fontSize: 11,
-          fontWeight: 600,
-          color: '#B54747',
-          textTransform: 'uppercase',
-          letterSpacing: '0.08em',
-          marginBottom: 12,
+          width: 52,
+          height: 52,
+          borderRadius: '50%',
+          background: 'var(--c-surface2, #F0F3F9)',
+          color: 'var(--c-accent, #4361EE)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          margin: '0 auto 18px',
         }}>
-          404 &mdash; Page Not Found
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M16 16s-1.5-2-4-2-4 2-4 2"></path>
+            <line x1="9" y1="9" x2="9.01" y2="9"></line>
+            <line x1="15" y1="9" x2="15.01" y2="9"></line>
+          </svg>
         </div>
 
-        {/* Heading */}
-        <h1 style={{
-          fontSize: 22,
-          fontWeight: 600,
-          color: '#172B4D',
+        {/* 404 Status Pill */}
+        <div style={{
+          display: 'inline-block',
+          fontSize: 11,
+          fontWeight: 700,
+          color: 'var(--c-text3, #75839C)',
+          letterSpacing: '0.08em',
+          textTransform: 'uppercase',
           marginBottom: 8,
-          letterSpacing: '-0.01em',
         }}>
-          This page does not exist
+          Error 404
+        </div>
+
+        {/* Concise Heading */}
+        <h1 style={{
+          fontSize: 20,
+          fontWeight: 700,
+          color: 'var(--c-text, #1E293B)',
+          letterSpacing: '-0.02em',
+          margin: '0 0 8px',
+        }}>
+          Page Not Found
         </h1>
 
-        {/* Description */}
+        {/* Short Explanation */}
         <p style={{
-          fontSize: 13,
-          color: '#64717D',
-          lineHeight: '20px',
-          marginBottom: 28,
+          fontSize: 13.5,
+          color: 'var(--c-text2, #5A6A85)',
+          lineHeight: 1.5,
+          margin: '0 0 24px',
         }}>
-          The URL you requested could not be matched to any page in CIVIS.
-          Please check the address or return to your dashboard.
+          The page you are looking for does not exist or may have been moved.
         </p>
 
-        {/* Action button */}
-        <button
-          type="button"
-          onClick={() => router.push(dashboardPath)}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6,
-            padding: '10px 24px',
-            fontSize: 14,
-            fontWeight: 500,
-            borderRadius: 4,
-            border: 'none',
-            background: '#172B4D',
-            color: '#fff',
-            cursor: 'pointer',
-          }}
-        >
-          {dashboardLabel}
-        </button>
-
-        {session && (
-          <div style={{
-            marginTop: 16,
-            fontSize: 12,
-            color: '#A0AEB0',
-          }}>
-            Signed in as{' '}
-            <span style={{ fontFamily: "'IBM Plex Mono', monospace", color: '#64717D' }}>
-              {session.employee_id}
-            </span>
-            {' '}&middot;{' '}
-            <span style={{ color: '#64717D' }}>{roleLabel(session.role)}</span>
-          </div>
-        )}
+        {/* Action Buttons */}
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            onClick={() => router.push(dashboardPath)}
+            className="btn btn-primary"
+            style={{ borderRadius: 'var(--radius-sm, 8px)', padding: '9px 18px' }}
+          >
+            Go to Dashboard
+          </button>
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="btn btn-ghost"
+            style={{ borderRadius: 'var(--radius-sm, 8px)', padding: '9px 18px' }}
+          >
+            Go Back
+          </button>
+        </div>
       </div>
 
-      <p style={{ textAlign: 'center', fontSize: 11, color: '#C0C8CC', marginTop: 20 }}>
-        CIVIS Monitoring Platform &mdash; Demonstration Prototype
+      <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--c-text3, #75839C)', marginTop: 20 }}>
+        CIVIS Monitoring Platform &bull; Employability Development Scheme
       </p>
     </div>
   );

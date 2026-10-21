@@ -7,6 +7,7 @@ import AppLayout from '@/components/layout/AppLayout';
 import StatusBadge from '@/components/ui/StatusBadge';
 import AnomalyCard from '@/components/ui/AnomalyCard';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import EmptyState from '@/components/ui/EmptyState';
 import { api } from '@/lib/api';
 import { formatDate } from '@/lib/utils';
 
@@ -109,8 +110,8 @@ export default function BeneficiaryProfilePage() {
       <div style={{
         display: 'flex',
         gap: 24,
-        borderBottom: '1px solid var(--c-border)',
-        marginBottom: 20,
+        borderBottom: '1px solid var(--c-border, #E2E8F0)',
+        marginBottom: 24,
         overflowX: 'auto',
       }}>
         {TABS.map(tab => {
@@ -122,14 +123,15 @@ export default function BeneficiaryProfilePage() {
               style={{
                 background: 'none',
                 border: 'none',
-                borderBottom: active ? '2px solid var(--c-teal)' : '2px solid transparent',
-                color: active ? 'var(--c-teal)' : 'var(--c-text2)',
-                fontWeight: active ? 600 : 400,
-                fontSize: 13,
-                padding: '8px 4px',
+                borderBottom: active ? '2px solid var(--c-accent, #4361EE)' : '2px solid transparent',
+                color: active ? 'var(--c-accent, #4361EE)' : 'var(--c-text2, #5A6A85)',
+                fontWeight: active ? 600 : 500,
+                fontSize: 13.5,
+                padding: '10px 4px',
                 cursor: 'pointer',
                 marginBottom: -1,
                 whiteSpace: 'nowrap',
+                transition: 'all 0.12s ease',
               }}
             >
               {tab.label}
@@ -148,9 +150,11 @@ export default function BeneficiaryProfilePage() {
             </div>
             <div className="card-body">
               {(!profile.enrolments || profile.enrolments.length === 0) ? (
-                <div className="empty-state" style={{ padding: '24px 0' }}>
-                  <p>No enrolments on record.</p>
-                </div>
+                <EmptyState
+                  title="No Enrolments Recorded"
+                  message="This beneficiary has no active or past batch enrolments on file."
+                  compact
+                />
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {profile.enrolments.map((e: any) => (
@@ -193,9 +197,11 @@ export default function BeneficiaryProfilePage() {
               <span className="section-label">Attendance Summary</span>
             </div>
             {(!profile.attendance_summary || profile.attendance_summary.length === 0) ? (
-              <div className="empty-state">
-                <p>No attendance records found.</p>
-              </div>
+              <EmptyState
+                title="No Attendance Logs"
+                message="No biometric or telemetry check-in records have been synchronized."
+                compact
+              />
             ) : (
               <table>
                 <thead>
@@ -244,9 +250,11 @@ export default function BeneficiaryProfilePage() {
               <span className="section-label">Assessments & Certifications ({profile.assessments?.length || 0})</span>
             </div>
             {(!profile.assessments || profile.assessments.length === 0) ? (
-              <div className="empty-state">
-                <p>No assessment records found.</p>
-              </div>
+              <EmptyState
+                title="No Assessment Records"
+                message="No assessment or certification evaluations recorded for this candidate."
+                compact
+              />
             ) : (
               <table>
                 <thead>
@@ -280,9 +288,11 @@ export default function BeneficiaryProfilePage() {
             </div>
             <div className="card-body">
               {(!profile.placements || profile.placements.length === 0) ? (
-                <div className="empty-state" style={{ padding: '24px 0' }}>
-                  <p>No placement records.</p>
-                </div>
+                <EmptyState
+                  title="No Placement Records"
+                  message="No verified employer placements registered for this beneficiary."
+                  compact
+                />
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {profile.placements.map((p: any) => (
@@ -320,9 +330,11 @@ export default function BeneficiaryProfilePage() {
               <span className="section-label">Payments ({profile.payments?.length || 0})</span>
             </div>
             {(!profile.payments || profile.payments.length === 0) ? (
-              <div className="empty-state">
-                <p>No payment records.</p>
-              </div>
+              <EmptyState
+                title="No Payment Disbursements"
+                message="No stipend or fee payouts processed for this record."
+                compact
+              />
             ) : (
               <table>
                 <thead>
@@ -356,9 +368,11 @@ export default function BeneficiaryProfilePage() {
             </div>
             <div className="card-body">
               {(!profile.anomalies || profile.anomalies.length === 0) ? (
-                <div className="empty-state">
-                  <p>No anomalies detected for this beneficiary.</p>
-                </div>
+                <EmptyState
+                  title="No Anomalies Flagged"
+                  message="No risk signals or identity conflicts associated with this beneficiary."
+                  compact
+                />
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {profile.anomalies.map((a: any) => (

@@ -79,9 +79,9 @@ export default function SettingsPage() {
       {/* Horizontal Tab Bar with border-bottom style */}
       <div style={{
         display: 'flex',
-        gap: 20,
-        borderBottom: '1px solid var(--c-border)',
-        marginBottom: 20,
+        gap: 24,
+        borderBottom: '1px solid var(--c-border, #E2E8F0)',
+        marginBottom: 24,
         overflowX: 'auto',
       }}>
         {RULE_SETS.map(rs => {
@@ -93,14 +93,15 @@ export default function SettingsPage() {
               style={{
                 background: 'none',
                 border: 'none',
-                borderBottom: active ? '2px solid var(--c-teal)' : '2px solid transparent',
-                color: active ? 'var(--c-teal)' : 'var(--c-text2)',
-                fontWeight: active ? 600 : 400,
-                fontSize: 13,
+                borderBottom: active ? '2px solid var(--c-accent, #4361EE)' : '2px solid transparent',
+                color: active ? 'var(--c-accent, #4361EE)' : 'var(--c-text2, #5A6A85)',
+                fontWeight: active ? 600 : 500,
+                fontSize: 13.5,
                 padding: '10px 6px',
                 cursor: 'pointer',
                 marginBottom: -1,
                 whiteSpace: 'nowrap',
+                transition: 'all 0.12s ease',
               }}
             >
               {rs.label}

@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import AppLayout from '@/components/layout/AppLayout';
 import RiskBadge from '@/components/ui/RiskBadge';
 import MetricCard from '@/components/ui/MetricCard';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import EmptyState from '@/components/ui/EmptyState';
 import { api } from '@/lib/api';
 import { MatchResult } from '@/types';
 import { formatDateTime } from '@/lib/utils';
@@ -14,13 +15,17 @@ export default function MatchingPage() {
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
   const [runMsg, setRunMsg] = useState('');
-  const [selected, setSelected] = useState<MatchResult | null>(null);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [filterType, setFilterType] = useState<'all' | 'conflicts' | 'high' | 'possible'>('all');
 
   async function load() {
     setLoading(true);
     try {
       const data = await api.getMatchingResults();
-      setResults(data);
+      setResults(data || []);
+      if (data && data.length > 0 && selectedId === null) {
+        setSelectedId(data[0].anomaly_id);
+      }
     } finally {
       setLoading(false);
     }
@@ -35,10 +40,10 @@ export default function MatchingPage() {
     setRunMsg('');
     try {
       const r = await api.runMatching();
-      setRunMsg(`Matching complete: ${r.matches_found} matches found, ${r.conflicts_found} enrolment conflicts.`);
+      setRunMsg(`Completed: ${r.matches_found} matches identified, ${r.conflicts_found} enrolment conflicts.`);
       await load();
     } catch {
-      setRunMsg('Beneficiary matching run failed.');
+      setRunMsg('Beneficiary identity matching scan failed.');
     } finally {
       setRunning(false);
     }
@@ -48,352 +53,484 @@ export default function MatchingPage() {
   const highConf = results.filter(r => !r.is_conflict && r.match_level === 'high');
   const possible = results.filter(r => !r.is_conflict && r.match_level === 'possible');
 
+  const filteredResults = results.filter(r => {
+    if (filterType === 'conflicts') return r.is_conflict;
+    if (filterType === 'high') return !r.is_conflict && r.match_level === 'high';
+    if (filterType === 'possible') return !r.is_conflict && r.match_level === 'possible';
+    return true;
+  });
+
+  const selectedMatch = results.find(r => r.anomaly_id === selectedId) || results[0] || null;
+
   return (
     <AppLayout>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+      {/* 1. Page Header */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: 16,
+        marginBottom: 24,
+      }}>
         <div>
           <h1 className="page-title">Beneficiary Identity Matching</h1>
-          <p className="page-subtitle">Probabilistic duplicate enrolment detection across demographic and biometric surrogate vectors</p>
+          <p className="page-subtitle">
+            Deduplication and concurrent enrolment verification across demographic and biometric surrogates
+          </p>
         </div>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           {runMsg && (
             <span style={{
-              fontSize: 12,
-              padding: '4px 10px',
-              borderRadius: 4,
-              backgroundColor: runMsg.includes('failed') ? '#FDEAEA' : '#EAF4EF',
-              color: runMsg.includes('failed') ? '#B54747' : '#31785B',
-              border: `1px solid ${runMsg.includes('failed') ? '#DCE2E3' : '#B5DCC8'}`,
+              fontSize: 12.5,
+              fontWeight: 500,
+              padding: '6px 12px',
+              borderRadius: 'var(--radius-sm, 8px)',
+              backgroundColor: runMsg.includes('failed') ? 'var(--c-danger-bg, #FFF0EF)' : 'var(--c-success-bg, #E6FBF3)',
+              color: runMsg.includes('failed') ? 'var(--c-danger, #EE5D50)' : 'var(--c-success, #01B574)',
+              border: `1px solid ${runMsg.includes('failed') ? '#FFD3CE' : '#B8F2DC'}`,
             }}>
               {runMsg}
             </span>
           )}
           <button
+            type="button"
             onClick={runMatch}
             disabled={running}
-            className="btn btn-primary btn-sm"
+            className="btn btn-primary"
+            style={{ borderRadius: 'var(--radius-sm, 8px)' }}
           >
-            {running ? 'Running Matching...' : 'Run Beneficiary Matching'}
+            {running ? 'Executing Engine...' : 'Run Identity Matching'}
           </button>
         </div>
       </div>
 
-      {/* Advisory Banner */}
+      {/* 2. Summary Row (Standard Cards) */}
       <div style={{
-        background: '#EFF2F1',
-        border: '1px solid var(--c-border)',
-        borderRadius: 4,
-        padding: '10px 14px',
-        fontSize: 12,
-        color: 'var(--c-text2)',
-        marginBottom: 20,
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
+        gap: 16,
+        marginBottom: 24,
       }}>
-        <strong style={{ color: 'var(--c-navy)' }}>Matching Protocol:</strong> Matches are computed using string distance, mobile surrogate tokens, and bank account token similarity. High confidence matches require field verification of original identity proof documents before corrective deduplication.
-      </div>
-
-      {/* Metric Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginBottom: 20 }}>
         <MetricCard
-          label="Enrolment Conflicts"
-          value={conflicts.length}
-          sub="Simultaneous active enrolments"
-          accent="critical"
+          label="Total Matches"
+          value={results.length}
+          sub="Pairs requiring audit"
+          icon={
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+          }
         />
         <MetricCard
-          label="High Confidence Matches"
+          label="Concurrent Conflicts"
+          value={conflicts.length}
+          sub="Simultaneous active training"
+          accent="critical"
+          icon={
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+          }
+        />
+        <MetricCard
+          label="High Confidence"
           value={highConf.length}
           sub="Similarity score ≥ 85%"
           accent="warning"
+          icon={
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+            </svg>
+          }
         />
         <MetricCard
           label="Possible Matches"
           value={possible.length}
           sub="Similarity score 60% – 84%"
-          accent="default"
+          accent="info"
+          icon={
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+          }
         />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: selected ? '1fr 440px' : '1fr', gap: 20, alignItems: 'start' }}>
-        {/* Results List */}
-        <div>
-          {loading ? (
-            <LoadingSpinner rows={8} label="Loading matching candidates..." />
-          ) : results.length === 0 ? (
-            <div className="card">
-              <div className="empty-state">
-                <p>No duplicate records found. Click "Run Beneficiary Matching" to scan across all enrolments.</p>
+      {/* 3. Main Matching Operational Layout */}
+      {loading ? (
+        <LoadingSpinner rows={6} label="Scanning identity registries..." />
+      ) : results.length === 0 ? (
+        <div className="card">
+          <EmptyState
+            title="No Matching Records Found"
+            message="No duplicate identity vectors or enrolment collisions were detected. Click 'Run Identity Matching' to scan active beneficiary records."
+            action={
+              <button onClick={runMatch} className="btn btn-primary btn-sm">
+                Initiate Scan
+              </button>
+            }
+          />
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: '360px 1fr', gap: 24, alignItems: 'start' }}>
+          {/* Left Column: Match Pair Selector */}
+          <div className="card" style={{ overflow: 'hidden' }}>
+            <div className="card-header" style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <span className="section-label">Candidate Pairs</span>
+                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--c-text, #1E293B)', marginTop: 2 }}>
+                  Records ({filteredResults.length})
+                </div>
+              </div>
+
+              {/* Filter Pills */}
+              <div style={{ display: 'flex', gap: 4 }}>
+                <button
+                  type="button"
+                  onClick={() => setFilterType('all')}
+                  className={`btn btn-sm ${filterType === 'all' ? 'btn-primary' : 'btn-ghost'}`}
+                  style={{ padding: '4px 8px', fontSize: 11, height: 26 }}
+                >
+                  All
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFilterType('conflicts')}
+                  className={`btn btn-sm ${filterType === 'conflicts' ? 'btn-danger' : 'btn-ghost'}`}
+                  style={{ padding: '4px 8px', fontSize: 11, height: 26 }}
+                >
+                  Conflicts
+                </button>
               </div>
             </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {results.map(r => {
-                const isSelected = selected?.anomaly_id === r.anomaly_id;
-                const score = r.confidence_score ?? 0;
-                const scoreColor = r.is_conflict ? '#B54747' : score >= 85 ? '#B77928' : '#287D79';
 
+            <div style={{ maxHeight: 600, overflowY: 'auto', padding: 0 }}>
+              {filteredResults.map(r => {
+                const isSelected = selectedMatch?.anomaly_id === r.anomaly_id;
+                const score = r.confidence_score ?? 0;
                 return (
                   <div
                     key={r.anomaly_id}
-                    onClick={() => setSelected(isSelected ? null : r)}
-                    className="card"
+                    onClick={() => setSelectedId(r.anomaly_id)}
                     style={{
+                      padding: '14px 18px',
+                      borderBottom: '1px solid var(--c-border, #E2E8F0)',
                       cursor: 'pointer',
-                      borderColor: isSelected ? 'var(--c-teal)' : 'var(--c-border)',
-                      padding: '16px 18px',
-                      transition: 'border-color 0.12s',
+                      background: isSelected ? 'rgba(67, 97, 238, 0.06)' : 'transparent',
+                      borderLeft: isSelected ? '3px solid var(--c-accent, #4361EE)' : '3px solid transparent',
+                      transition: 'all 0.12s ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isSelected) e.currentTarget.style.background = 'var(--c-surface2, #F0F3F9)';
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isSelected) e.currentTarget.style.background = 'transparent';
                     }}
                   >
-                    {/* Header Strip with Conflict banner or No conflict badge */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
-                      {r.is_conflict ? (
-                        <div style={{
-                          background: '#FDEAEA',
-                          border: '1px solid #E8BABA',
-                          borderRadius: 4,
-                          padding: '4px 10px',
-                          color: '#B54747',
-                          fontSize: 11,
-                          fontWeight: 600,
-                          letterSpacing: '0.04em',
-                          textTransform: 'uppercase',
-                        }}>
-                          Concurrent Enrolment Conflict
-                        </div>
-                      ) : (
-                        <div style={{
-                          background: '#EAF4EF',
-                          border: '1px solid #B5DCC8',
-                          borderRadius: 4,
-                          padding: '4px 10px',
-                          color: '#31785B',
-                          fontSize: 11,
-                          fontWeight: 600,
-                          letterSpacing: '0.04em',
-                          textTransform: 'uppercase',
-                        }}>
-                          {r.match_level ? `${r.match_level} Confidence Match` : 'Potential Match'}
-                        </div>
-                      )}
-
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span className="mono" style={{ fontSize: 13, fontWeight: 700, color: scoreColor }}>
-                          {score.toFixed(0)}%
-                        </span>
-                        <RiskBadge level={r.severity} size="sm" />
-                      </div>
-                    </div>
-
-                    {/* Side-by-side beneficiary comparison: two columns separated by center confidence column */}
-                    <div style={{
-                      display: 'grid',
-                      gridTemplateColumns: '1fr 90px 1fr',
-                      gap: 12,
-                      alignItems: 'center',
-                    }}>
-                      {/* Left: Beneficiary A */}
-                      <div style={{
-                        background: 'var(--c-surface2)',
-                        border: '1px solid var(--c-border)',
-                        borderRadius: 4,
-                        padding: '10px 12px',
-                      }}>
-                        <div className="label" style={{ fontSize: 10, color: 'var(--c-text2)', marginBottom: 2 }}>Candidate A</div>
-                        <div style={{ fontWeight: 600, color: 'var(--c-navy)', fontSize: 13 }}>
-                          {r.beneficiary_a?.name || '—'}
-                        </div>
-                        <div className="mono" style={{ fontSize: 11, color: 'var(--c-text2)', marginTop: 2 }}>
-                          {r.beneficiary_a?.token || '—'}
-                        </div>
-                        <div style={{ fontSize: 11, color: 'var(--c-text2)', marginTop: 2 }}>
-                          {r.beneficiary_a?.district || '—'}
-                        </div>
-                      </div>
-
-                      {/* Center: Confidence & Bar */}
-                      <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-                        <span className="mono" style={{ fontSize: 11, fontWeight: 600, color: scoreColor }}>
-                          {score.toFixed(0)}%
-                        </span>
-                        <div className="risk-bar-track" style={{ width: '100%', height: 4 }}>
-                          <div
-                            className="risk-bar-fill"
-                            style={{
-                              width: `${Math.min(100, Math.max(0, score))}%`,
-                              backgroundColor: scoreColor,
-                            }}
-                          />
-                        </div>
-                        <span style={{ fontSize: 10, color: 'var(--c-text2)', letterSpacing: '0.04em' }}>
-                          MATCH
-                        </span>
-                      </div>
-
-                      {/* Right: Beneficiary B */}
-                      <div style={{
-                        background: 'var(--c-surface2)',
-                        border: '1px solid var(--c-border)',
-                        borderRadius: 4,
-                        padding: '10px 12px',
-                      }}>
-                        <div className="label" style={{ fontSize: 10, color: 'var(--c-text2)', marginBottom: 2 }}>Candidate B</div>
-                        <div style={{ fontWeight: 600, color: 'var(--c-navy)', fontSize: 13 }}>
-                          {r.beneficiary_b?.name || '—'}
-                        </div>
-                        <div className="mono" style={{ fontSize: 11, color: 'var(--c-text2)', marginTop: 2 }}>
-                          {r.beneficiary_b?.token || '—'}
-                        </div>
-                        <div style={{ fontSize: 11, color: 'var(--c-text2)', marginTop: 2 }}>
-                          {r.beneficiary_b?.district || '—'}
-                        </div>
-                      </div>
-                    </div>
-
-                    {r.conflict_description && (
-                      <div style={{
-                        marginTop: 12,
-                        padding: '6px 10px',
-                        borderRadius: 4,
-                        background: '#FDEAEA',
-                        border: '1px solid #E8BABA',
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--c-text, #1E293B)' }}>
+                        {r.beneficiary_a?.name || 'Candidate A'} &bull; {r.beneficiary_b?.name || 'Candidate B'}
+                      </span>
+                      <span style={{
                         fontSize: 12,
-                        color: '#B54747',
+                        fontWeight: 700,
+                        color: r.is_conflict ? 'var(--c-danger, #EE5D50)' : 'var(--c-accent, #4361EE)',
+                        fontVariantNumeric: 'tabular-nums',
                       }}>
-                        {r.conflict_description}
-                      </div>
-                    )}
+                        {score.toFixed(0)}%
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 }}>
+                      <span className="mono" style={{ fontSize: 11, color: 'var(--c-text3, #75839C)' }}>
+                        {r.beneficiary_a?.token || '—'}
+                      </span>
+                      <span style={{
+                        fontSize: 10.5,
+                        fontWeight: 600,
+                        padding: '2px 8px',
+                        borderRadius: 'var(--radius-pill, 50px)',
+                        background: r.is_conflict ? 'var(--c-danger-bg, #FFF0EF)' : 'var(--c-info-bg, #EEF2FF)',
+                        color: r.is_conflict ? 'var(--c-danger, #EE5D50)' : 'var(--c-info, #4361EE)',
+                      }}>
+                        {r.is_conflict ? 'CONFLICT' : `${r.match_level?.toUpperCase() || 'MATCH'}`}
+                      </span>
+                    </div>
                   </div>
                 );
               })}
             </div>
-          )}
-        </div>
+          </div>
 
-        {/* Selected Detail Panel */}
-        {selected && (
-          <div className="detail-panel">
-            <div className="detail-panel-header">
-              <div>
-                <span className="section-label">Candidate Match Comparison</span>
-                <div style={{ fontWeight: 600, color: 'var(--c-navy)', fontSize: 14 }}>
-                  Anomaly #{selected.anomaly_id}
+          {/* Right Column: Main Matching Operational Card */}
+          {selectedMatch ? (
+            <div className="card">
+              {/* Header inside the primary card */}
+              <div className="card-header" style={{ padding: '20px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--c-text, #1E293B)' }}>
+                      Match Record Comparison
+                    </span>
+                    <span className="mono" style={{ fontSize: 12, color: 'var(--c-text3, #75839C)' }}>
+                      Anomaly #{selectedMatch.anomaly_id}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 12.5, color: 'var(--c-text2, #5A6A85)', marginTop: 3 }}>
+                    Detected on {formatDateTime(selectedMatch.detected_at)}
+                  </div>
                 </div>
-              </div>
-              <button
-                onClick={() => setSelected(null)}
-                className="btn btn-ghost btn-sm"
-                style={{ padding: '2px 8px', fontSize: 14 }}
-              >
-                ✕
-              </button>
-            </div>
 
-            <div className="detail-panel-body">
-              {/* Confidence Bar */}
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                  <span className="label">Similarity Confidence</span>
-                  <span className="mono" style={{ fontSize: 14, fontWeight: 700, color: selected.is_conflict ? '#B54747' : '#287D79' }}>
-                    {selected.confidence_score?.toFixed(1)}%
-                  </span>
-                </div>
-                <div className="risk-bar-track" style={{ height: 6 }}>
-                  <div
-                    className="risk-bar-fill"
-                    style={{
-                      width: `${Math.min(100, Math.max(0, selected.confidence_score ?? 0))}%`,
-                      backgroundColor: selected.is_conflict ? '#B54747' : '#287D79',
-                    }}
-                  />
-                </div>
-              </div>
-
-              {selected.conflict_description && (
-                <div style={{
-                  background: '#FDEAEA',
-                  border: '1px solid #E8BABA',
-                  borderRadius: 4,
-                  padding: '8px 12px',
-                  color: '#B54747',
-                  fontSize: 12,
-                  marginBottom: 16,
-                  lineHeight: '18px',
-                }}>
-                  <strong>Conflict:</strong> {selected.conflict_description}
-                </div>
-              )}
-
-              {/* Side-by-side attributes comparison */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
-                {[
-                  { title: 'Record A', ben: selected.beneficiary_a },
-                  { title: 'Record B', ben: selected.beneficiary_b },
-                ].map(({ title, ben }, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      background: 'var(--c-surface2)',
-                      border: '1px solid var(--c-border)',
-                      borderRadius: 4,
-                      padding: '10px 12px',
-                      fontSize: 12,
-                    }}
-                  >
-                    <div className="label" style={{ color: 'var(--c-navy)', marginBottom: 6 }}>{title}</div>
-                    <div style={{ marginBottom: 6 }}>
-                      <span className="label" style={{ fontSize: 10 }}>Name:</span>
-                      <div style={{ fontWeight: 600 }}>{ben?.name}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                  {/* Prominent Confidence Display */}
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--c-text3, #75839C)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                      Match Confidence
                     </div>
-                    <div style={{ marginBottom: 6 }}>
-                      <span className="label" style={{ fontSize: 10 }}>Token:</span>
-                      <div className="mono" style={{ fontSize: 11 }}>{ben?.token}</div>
-                    </div>
-                    <div style={{ marginBottom: 6 }}>
-                      <span className="label" style={{ fontSize: 10 }}>Age / District:</span>
-                      <div>{ben?.age} yrs · {ben?.district}</div>
-                    </div>
-                    <div style={{ marginBottom: 6 }}>
-                      <span className="label" style={{ fontSize: 10 }}>Mobile Token:</span>
-                      <div className="mono" style={{ fontSize: 11, color: 'var(--c-text2)' }}>{ben?.mobile_token}</div>
-                    </div>
-                    <div>
-                      <span className="label" style={{ fontSize: 10 }}>Bank Token:</span>
-                      <div className="mono" style={{ fontSize: 11, color: 'var(--c-text2)' }}>{ben?.bank_account_token}</div>
+                    <div style={{
+                      fontSize: 22,
+                      fontWeight: 800,
+                      color: selectedMatch.is_conflict ? 'var(--c-danger, #EE5D50)' : 'var(--c-accent, #4361EE)',
+                      lineHeight: 1.1,
+                      fontVariantNumeric: 'tabular-nums',
+                    }}>
+                      {(selectedMatch.confidence_score ?? 0).toFixed(0)}%
                     </div>
                   </div>
-                ))}
+
+                  <RiskBadge level={selectedMatch.severity} size="md" />
+                </div>
               </div>
 
-              {/* Match Reasons */}
-              {selected.reasons && selected.reasons.length > 0 && (
-                <div style={{ marginBottom: 16 }}>
-                  <div className="section-label" style={{ marginBottom: 6 }}>Matching Signals</div>
-                  <ul style={{ margin: 0, paddingLeft: 16, fontSize: 12, color: 'var(--c-text2)', lineHeight: '18px' }}>
-                    {selected.reasons.map((r, i) => (
-                      <li key={i}>{r}</li>
-                    ))}
-                  </ul>
+              {/* Conflict Alert Banner if applicable */}
+              {selectedMatch.conflict_description && (
+                <div style={{
+                  margin: '20px 24px 0',
+                  padding: '12px 16px',
+                  borderRadius: 'var(--radius-sm, 8px)',
+                  background: 'var(--c-danger-bg, #FFF0EF)',
+                  border: '1px solid #FFD3CE',
+                  color: 'var(--c-danger, #EE5D50)',
+                  fontSize: 13,
+                  lineHeight: 1.5,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                  </svg>
+                  <div>
+                    <strong>Conflict Detected: </strong>
+                    {selectedMatch.conflict_description}
+                  </div>
                 </div>
               )}
 
-              <div style={{
-                background: '#FDF3E3',
-                border: '1px solid #E8D5A3',
-                borderRadius: 4,
-                padding: '8px 12px',
-                fontSize: 12,
-                color: '#B77928',
-                marginBottom: 16,
-              }}>
-                <strong>Required Protocol:</strong> Physical photo identity records must be corroborated prior to initiating de-duplication or subsidy recovery procedures.
-              </div>
+              {/* Source vs Matched Record - Separated cleanly inside primary card */}
+              <div className="card-body" style={{ padding: '24px' }}>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: 20,
+                  background: 'var(--c-surface2, #F0F3F9)',
+                  borderRadius: 'var(--radius-md, 12px)',
+                  border: '1px solid var(--c-border, #E2E8F0)',
+                  padding: '20px',
+                }}>
+                  {/* Record A */}
+                  <div>
+                    <div style={{
+                      fontSize: 12,
+                      fontWeight: 700,
+                      color: 'var(--c-text, #1E293B)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                      marginBottom: 14,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                    }}>
+                      <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--c-accent, #4361EE)' }} />
+                      Primary Record (Candidate A)
+                    </div>
 
-              <div className="mono" style={{ fontSize: 11, color: 'var(--c-text2)' }}>
-                Detected: {formatDateTime(selected.detected_at)}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      <div>
+                        <span className="label" style={{ fontSize: 11, marginBottom: 2 }}>Full Name</span>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--c-text, #1E293B)' }}>
+                          {selectedMatch.beneficiary_a?.name || '—'}
+                        </div>
+                      </div>
+
+                      <div>
+                        <span className="label" style={{ fontSize: 11, marginBottom: 2 }}>Beneficiary Token</span>
+                        <div className="mono" style={{ fontSize: 12.5, color: 'var(--c-text, #1E293B)' }}>
+                          {selectedMatch.beneficiary_a?.token || '—'}
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                        <div>
+                          <span className="label" style={{ fontSize: 11, marginBottom: 2 }}>Age</span>
+                          <div style={{ fontSize: 13, color: 'var(--c-text, #1E293B)' }}>
+                            {selectedMatch.beneficiary_a?.age ? `${selectedMatch.beneficiary_a.age} years` : '—'}
+                          </div>
+                        </div>
+                        <div>
+                          <span className="label" style={{ fontSize: 11, marginBottom: 2 }}>District</span>
+                          <div style={{ fontSize: 13, color: 'var(--c-text, #1E293B)' }}>
+                            {selectedMatch.beneficiary_a?.district || '—'}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <span className="label" style={{ fontSize: 11, marginBottom: 2 }}>Mobile Surrogate Token</span>
+                        <div className="mono" style={{ fontSize: 12, color: 'var(--c-text2, #5A6A85)' }}>
+                          {selectedMatch.beneficiary_a?.mobile_token || '—'}
+                        </div>
+                      </div>
+
+                      <div>
+                        <span className="label" style={{ fontSize: 11, marginBottom: 2 }}>Bank Account Surrogate</span>
+                        <div className="mono" style={{ fontSize: 12, color: 'var(--c-text2, #5A6A85)' }}>
+                          {selectedMatch.beneficiary_a?.bank_account_token || '—'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Record B */}
+                  <div style={{ borderLeft: '1px solid var(--c-border, #E2E8F0)', paddingLeft: 20 }}>
+                    <div style={{
+                      fontSize: 12,
+                      fontWeight: 700,
+                      color: 'var(--c-text, #1E293B)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                      marginBottom: 14,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                    }}>
+                      <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--c-warning, #FFB547)' }} />
+                      Matched Record (Candidate B)
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      <div>
+                        <span className="label" style={{ fontSize: 11, marginBottom: 2 }}>Full Name</span>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--c-text, #1E293B)' }}>
+                          {selectedMatch.beneficiary_b?.name || '—'}
+                        </div>
+                      </div>
+
+                      <div>
+                        <span className="label" style={{ fontSize: 11, marginBottom: 2 }}>Beneficiary Token</span>
+                        <div className="mono" style={{ fontSize: 12.5, color: 'var(--c-text, #1E293B)' }}>
+                          {selectedMatch.beneficiary_b?.token || '—'}
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                        <div>
+                          <span className="label" style={{ fontSize: 11, marginBottom: 2 }}>Age</span>
+                          <div style={{ fontSize: 13, color: 'var(--c-text, #1E293B)' }}>
+                            {selectedMatch.beneficiary_b?.age ? `${selectedMatch.beneficiary_b.age} years` : '—'}
+                          </div>
+                        </div>
+                        <div>
+                          <span className="label" style={{ fontSize: 11, marginBottom: 2 }}>District</span>
+                          <div style={{ fontSize: 13, color: 'var(--c-text, #1E293B)' }}>
+                            {selectedMatch.beneficiary_b?.district || '—'}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <span className="label" style={{ fontSize: 11, marginBottom: 2 }}>Mobile Surrogate Token</span>
+                        <div className="mono" style={{ fontSize: 12, color: 'var(--c-text2, #5A6A85)' }}>
+                          {selectedMatch.beneficiary_b?.mobile_token || '—'}
+                        </div>
+                      </div>
+
+                      <div>
+                        <span className="label" style={{ fontSize: 11, marginBottom: 2 }}>Bank Account Surrogate</span>
+                        <div className="mono" style={{ fontSize: 12, color: 'var(--c-text2, #5A6A85)' }}>
+                          {selectedMatch.beneficiary_b?.bank_account_token || '—'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Evidence & Matching Signals Below */}
+                <div style={{ marginTop: 24 }}>
+                  <div className="section-label" style={{ marginBottom: 10 }}>
+                    Triggered Matching Signals &amp; Heuristics
+                  </div>
+
+                  {selectedMatch.reasons && selectedMatch.reasons.length > 0 ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {selectedMatch.reasons.map((r, i) => (
+                        <div
+                          key={i}
+                          style={{
+                            padding: '10px 14px',
+                            borderRadius: 'var(--radius-sm, 8px)',
+                            background: '#FFFFFF',
+                            border: '1px solid var(--c-border, #E2E8F0)',
+                            fontSize: 13,
+                            color: 'var(--c-text, #1E293B)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 10,
+                          }}
+                        >
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--c-accent, #4361EE)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                          </svg>
+                          <span>{r}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p style={{ fontSize: 13, color: 'var(--c-text2, #5A6A85)', margin: 0 }}>
+                      Surrogate identifier match based on token collision.
+                    </p>
+                  )}
+                </div>
+
+                {/* Operational Protocol Guidance */}
+                <div style={{
+                  marginTop: 20,
+                  padding: '12px 16px',
+                  borderRadius: 'var(--radius-sm, 8px)',
+                  background: 'var(--c-surface2, #F0F3F9)',
+                  border: '1px solid var(--c-border, #E2E8F0)',
+                  fontSize: 12.5,
+                  color: 'var(--c-text2, #5A6A85)',
+                  lineHeight: 1.5,
+                }}>
+                  <strong style={{ color: 'var(--c-text, #1E293B)' }}>Verification Protocol: </strong>
+                  Physical photo identity records and original biometric registration tokens must be verified before initiating deduplication, enrollment cancellation, or stipend recovery proceedings.
+                </div>
               </div>
             </div>
-          </div>
-        )}
-      </div>
+          ) : null}
+        </div>
+      )}
     </AppLayout>
   );
 }
