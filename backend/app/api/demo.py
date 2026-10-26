@@ -27,10 +27,10 @@ def reset_database(db: Session = Depends(get_db)):
     # Drop and recreate all tables
     Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
-    # Re-seed
-    from seed_data import seed_db
-    seed_db()
-    return {"status": "success", "message": "Database reset and re-seeded with baseline data."}
+    # Re-seed baseline data, demo users, and inspector assignments
+    from app.services.seed_service import ensure_all_demo_data
+    ensure_all_demo_data(db)
+    return {"status": "success", "message": "Database reset and re-seeded with baseline data, users, and assignments."}
 
 
 @router.post("/demo/generate-normal")

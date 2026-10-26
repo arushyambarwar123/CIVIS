@@ -8,6 +8,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import os
 
+import sys, os
+_backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _backend_dir not in sys.path:
+    sys.path.insert(0, _backend_dir)
+
 from app.database import engine, Base, SessionLocal
 from app.api import (
     dashboard, centres, batches, beneficiaries, trainers,
@@ -25,29 +30,10 @@ def _auto_seed():
     try:
         user_count = db.query(User).count()
         if user_count == 0:
-            print("[CIVIS] Empty database detected — seeding demo data...")
-            db.close()
-            # Seed main demo data (centres, batches, beneficiaries, etc.)
-            try:
-                import seed_data
-                seed_data.seed_db()
-                print("[CIVIS] Demo data seeded.")
-            except Exception as e:
-                print(f"[CIVIS] seed_data: {e}")
-            # Seed user accounts
-            try:
-                from seed_users import seed_users
-                seed_users()
-                print("[CIVIS] Demo users seeded.")
-            except Exception as e:
-                print(f"[CIVIS] seed_users: {e}")
-            # Seed inspector assignments
-            try:
-                from seed_inspector_assignments import seed_inspector_assignments
-                seed_inspector_assignments()
-                print("[CIVIS] Inspector assignments seeded.")
-            except Exception as e:
-                print(f"[CIVIS] seed_inspector_assignments: {e}")
+            print("[CIVIS] Empty database or 0 users detected — seeding all demo data...")
+            from app.services.seed_service import ensure_all_demo_data
+            ensure_all_demo_data(db)
+            print("[CIVIS] All demo data and users seeded.")
         else:
             print(f"[CIVIS] Database has {user_count} users — skipping seed.")
     except Exception as e:
@@ -57,6 +43,14 @@ def _auto_seed():
             db.close()
         except Exception:
             pass
+
+
+# Ensure tables and demo data are initialized on module load (critical for serverless Vercel)
+try:
+    Base.metadata.create_all(bind=engine)
+    _auto_seed()
+except Exception as e:
+    print(f"[CIVIS] Module init exception: {e}")
 
 
 @asynccontextmanager

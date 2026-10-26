@@ -41,6 +41,12 @@ class LoginResponse(BaseModel):
 def login(payload: LoginRequest, request: Request, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.employee_id == payload.employee_id).first()
 
+    # If users table is empty (e.g. fresh Vercel instance or reset database), auto-seed demo users
+    if not user and db.query(User).count() == 0:
+        from app.services.seed_service import ensure_all_demo_data
+        ensure_all_demo_data(db)
+        user = db.query(User).filter(User.employee_id == payload.employee_id).first()
+
     if not user or not verify_password(payload.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -142,3 +148,11 @@ def me(current_user: User = Depends(get_current_user), db: Session = Depends(get
 def logout():
     # JWT is stateless — client deletes token
     return {"message": "Logged out. Please clear your session token."}
+
+
+@router.post("/seed-users")
+def seed_users_endpoint(db: Session = Depends(get_db)):
+    from app.services.seed_service import ensure_all_demo_data
+    ensure_all_demo_data(db)
+    count = db.query(User).count()
+    return {"status": "success", "user_count": count}
